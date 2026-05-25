@@ -1,6 +1,22 @@
-# SAFU Protocol
+# SAFU — System Assurances
 
-Verification layer for agent-to-agent value transfer.
+**Staking that means something.**
+
+Most staking gives you yield. SAFU staking gives you cover. Stake ETH, get protected against wallet hacks. If your wallet gets drained — phishing, approval exploit, key compromise — you get paid out. Deterministically. No human vote. No governance proposal. No waiting room.
+
+[safustaking.com](https://safustaking.com)
+
+---
+
+## How it works
+
+1. **Enroll** — your wallet is scored by the SAFU oracle. Score determines your tier (A / B / C).
+2. **Stake** — 0.015 ETH. Your stake secures up to 0.25 ETH in coverage for 90 days.
+3. **If you get hacked** — submit the incident. Payout activates automatically. Streams to your beneficiary over 45 days. 2% daily cap, no exceptions.
+
+No committee. No vote. Same inputs, same output, every time.
+
+---
 
 ## SAFUPool — Mainnet
 
@@ -8,12 +24,22 @@ Verification layer for agent-to-agent value transfer.
 |---|---|
 | **Contract** | [`0x5f0a84405d485396eaA1CF53f9C21821147b9fC2`](https://etherscan.io/address/0x5f0a84405d485396eaa1cf53f9c21821147b9fc2) |
 | **Network** | Ethereum Mainnet |
-| **Verified** | [Etherscan](https://etherscan.io/address/0x5f0a84405d485396eaa1cf53f9c21821147b9fc2#code) |
+| **Verified source** | [Etherscan #code](https://etherscan.io/address/0x5f0a84405d485396eaa1cf53f9c21821147b9fc2#code) |
 | **Compiler** | Solidity 0.8.24, optimizer 200 runs |
 
-## Overview
+---
 
-SAFUPool is an oracle-gated staking pool. Enrollment requires a signed approval from the SAFU oracle. Payouts are streamed linearly over 45 days after a 7-day cooldown. A 2%/day outflow cap applies with no exemptions.
+## What's in this repo
+
+| File | What |
+|------|------|
+| `contracts/SAFUPool.sol` | On-chain pool — staking, payout stream, tier enforcement |
+| `script/Deploy.s.sol` | Foundry deploy script — atomically deploys + sets cosigner |
+| `foundry.toml` | Compiler settings for reproducible builds |
+
+The oracle scoring engine is off-chain and closed source. What's on-chain is the payout execution — auditable, deterministic, immutable.
+
+---
 
 ## Compile
 
@@ -21,7 +47,3 @@ SAFUPool is an oracle-gated staking pool. Enrollment requires a signed approval 
 forge install OpenZeppelin/openzeppelin-contracts
 forge build
 ```
-
-## Audit
-
-Source code matches deployed bytecode (Etherscan: Exact Match).
