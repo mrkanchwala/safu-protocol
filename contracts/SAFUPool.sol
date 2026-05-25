@@ -158,7 +158,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
      * @notice Stake ETH with a valid oracle approval.
      *
      * The oracle signs: keccak256(abi.encodePacked(
-     *   "SAFU_STAKE_APPROVAL", wallet, tier, deadline, reasonHash
+     *   "SAFU_STAKE_APPROVAL", address(this), block.chainid, wallet, tier, deadline, reasonHash
      * )) then wraps as an Ethereum signed message (EIP-191).
      */
     function stakeETH(
@@ -179,6 +179,8 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
         bytes32 inner = keccak256(abi.encodePacked(
             "SAFU_STAKE_APPROVAL",
+            address(this),
+            block.chainid,
             msg.sender,
             tier,
             deadline,
@@ -453,9 +455,10 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         require(wallet != address(0),           "zero wallet");
         require(entitlement > 0,                "zero entitlement");
         require(entitlement <= MAX_COVERAGE,    "exceeds max coverage");
-        require(stakes[wallet].amount > 0,      "wallet not staked");
-        require(!stakes[wallet].withdrawn,      "stake withdrawn");
-        require(!stakes[wallet].suspended,      "stake suspended");
+        require(stakes[wallet].amount > 0,                  "wallet not staked");
+        require(!stakes[wallet].withdrawn,                  "stake withdrawn");
+        require(!stakes[wallet].suspended,                  "stake suspended");
+        require(block.timestamp < stakes[wallet].unlocksAt, unicode"lock expired — no coverage");
 
         OverrideRequest storage req = pendingOverrides[claimId];
 
@@ -560,6 +563,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
     function setCoSigner(address newCoSigner) external onlyOwner {
         require(newCoSigner != address(0), "zero cosigner");
+        require(newCoSigner != owner(), "cosigner must differ from owner");
         coSigner = newCoSigner;
         emit CoSignerUpdated(newCoSigner);
     }
