@@ -1,6 +1,6 @@
 # SAFU — System Assurances
 
-**Staking that means something.**
+**System Assurances, F\*\*k You. Stake in SAFU.**
 
 Most staking gives you yield. SAFU staking gives you cover. Stake ETH, get protected against wallet hacks. If your wallet gets drained — phishing, approval exploit, key compromise — you get paid out. Deterministically. No human vote. No governance proposal. No waiting room.
 
