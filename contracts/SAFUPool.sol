@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
- * SAFUPool v3 — IBW staking pool with payout controls.
+ * SAFUPool v4 — IBW staking pool with payout controls.
  *
  * ETH-only. 0.015 ETH stake secures 0.25 ETH coverage for 90 days.
  * Oracle-gated enrollment: off-chain fraud scanner signs tier approval;
