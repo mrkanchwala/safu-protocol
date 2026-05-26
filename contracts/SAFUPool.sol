@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
- * SAFUPool v4 — IBW staking pool with payout controls.
+ * SAFUPool v5 — IBW staking pool with payout controls.
  *
  * ETH-only. 0.015 ETH stake secures 0.25 ETH coverage for 90 days.
  * Oracle-gated enrollment: off-chain fraud scanner signs tier approval;
@@ -75,7 +75,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     // -----------------------------------------------------------------------
 
     struct StakeRecord {
-        address beneficiary;  // receives hack payouts and points — set at stake, changeable before claim
+        bytes32 beneficiaryHash;  // keccak256(abi.encodePacked(beneficiary)) — plaintext never stored
         uint256 amount;
         uint8   tier;         // 1=A  2=B  3=C
         uint64  stakedAt;
@@ -111,7 +111,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
     event Staked(address indexed wallet, uint256 amount, uint8 tier, uint64 unlocksAt, bytes32 reasonHash);
     event Withdrawn(address indexed wallet, uint256 amount);
-    event PointsEarned(address indexed wallet, uint256 amount, uint64 stakedAt);
+    event PointsEarned(bytes32 indexed walletHash, uint256 amount, uint64 stakedAt);
     event PointsConfirmed(address indexed wallet, uint256 finalPoints, uint256 daysStaked);
     event StakeSuspended(address indexed wallet);
     event StakeUnsuspended(address indexed wallet);
@@ -119,7 +119,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     event OGStaker(address indexed wallet, uint256 timestamp);
     event OracleUpdated(address indexed newOracle);
     event CoSignerUpdated(address indexed newCoSigner);
-    event BeneficiaryUpdated(address indexed wallet, address indexed newBeneficiary);
+    event BeneficiaryUpdated(address indexed wallet, bytes32 newBeneficiaryHash);
     event SlotReleased(address indexed wallet);
     event MaxPoolSizeUpdated(uint256 newSize);
     event EmergencyWithdrawn(uint256 amount);
@@ -176,6 +176,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         require(totalStakers < MAX_STAKERS,             "pool full");
         require(totalStaked + msg.value <= maxPoolSize, "pool cap exceeded");
         require(beneficiary != address(0),              "zero beneficiary");
+        require(beneficiary != msg.sender,              "beneficiary cannot be staker");
 
         bytes32 inner = keccak256(abi.encodePacked(
             "SAFU_STAKE_APPROVAL",
@@ -192,9 +193,11 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         uint64 now_    = uint64(block.timestamp);
         uint64 unlocks = now_ + LOCK_PERIOD;
 
+        bytes32 beneficiaryHash = keccak256(abi.encodePacked(beneficiary));
+
         stakes[msg.sender] = StakeRecord({
-            beneficiary:  beneficiary,
-            amount:       msg.value,
+            beneficiaryHash: beneficiaryHash,
+            amount:          msg.value,
             tier:         tier,
             stakedAt:     now_,
             unlocksAt:    unlocks,
@@ -209,8 +212,8 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         totalEverStaked++;
 
         emit Staked(msg.sender, msg.value, tier, unlocks, reasonHash);
-        emit PointsEarned(beneficiary, msg.value, now_);
-        if (totalEverStaked <= 10) emit OGStaker(msg.sender, block.timestamp);
+        emit PointsEarned(beneficiaryHash, msg.value, now_);
+        if (totalEverStaked <= 50) emit OGStaker(msg.sender, block.timestamp);
     }
 
     // -----------------------------------------------------------------------
@@ -222,13 +225,17 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
      * Blocked while a claim is active (claimActive == true).
      * Suspended flag does NOT block withdrawal — principal always recoverable.
      */
-    function withdraw() external nonReentrant whenNotPaused {
+    function withdraw(address beneficiary) external nonReentrant whenNotPaused {
         StakeRecord storage s = stakes[msg.sender];
 
         require(s.amount > 0,                   "no stake");
         require(!s.withdrawn,                   "already withdrawn");
         require(!s.claimActive,                 "claim active");
         require(block.timestamp >= s.unlocksAt, "lock period active");
+        require(
+            keccak256(abi.encodePacked(beneficiary)) == s.beneficiaryHash,
+            "wrong beneficiary"
+        );
 
         uint256 daysStaked = (block.timestamp - s.stakedAt) / 1 days;
         uint256 amount     = s.amount;
@@ -237,7 +244,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         if (!s.slotReleased) totalStakers--;   // already decremented if releaseExpiredSlot was called
         totalStaked -= amount;
 
-        emit PointsConfirmed(s.beneficiary, daysStaked, daysStaked);
+        emit PointsConfirmed(beneficiary, daysStaked, daysStaked);
         emit Withdrawn(msg.sender, amount);
 
         (bool ok,) = msg.sender.call{value: amount}("");
@@ -256,11 +263,13 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
      */
     function setBeneficiary(address newBeneficiary) external {
         require(newBeneficiary != address(0), "zero beneficiary");
+        require(newBeneficiary != msg.sender, "beneficiary cannot be staker");
         StakeRecord storage s = stakes[msg.sender];
         require(s.amount > 0,  "no stake");
         require(!s.withdrawn,  "stake forfeited");
-        s.beneficiary = newBeneficiary;
-        emit BeneficiaryUpdated(msg.sender, newBeneficiary);
+        bytes32 newHash = keccak256(abi.encodePacked(newBeneficiary));
+        s.beneficiaryHash = newHash;
+        emit BeneficiaryUpdated(msg.sender, newHash);
     }
 
     // -----------------------------------------------------------------------
@@ -303,7 +312,8 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         address wallet,
         bytes32 txHash,
         uint256 entitlement
-    ) external onlyOwner {
+    ) external {
+        require(msg.sender == oracle || msg.sender == owner(), "not oracle or owner");
         require(wallet != address(0),               "zero wallet");
         require(entitlement > 0,                    "zero entitlement");
         require(entitlement <= MAX_COVERAGE,        "exceeds max coverage");
@@ -317,9 +327,10 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
         // Permanent forfeiture on submission — independent of claim outcome.
         // Wallet can never withdraw principal or stake again. Only payout path is claimStream.
-        stakes[wallet].withdrawn   = true;
-        stakes[wallet].claimActive = true;
-        totalStakers--;
+        stakes[wallet].withdrawn    = true;
+        stakes[wallet].claimActive  = true;
+        if (!stakes[wallet].slotReleased) totalStakers--;
+        stakes[wallet].slotReleased = true;   // prevents double-decrement if cancelClaim restores withdrawn
         // totalStaked NOT decremented — principal stays in pool as reserve
 
         claims[claimId] = Claim({
@@ -365,13 +376,17 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
      * If the daily cap is exhausted, reverts — caller retries next calendar day.
      * Stake is forfeited on completion (principal stays in pool as reserve).
      */
-    function claimStream(bytes32 claimId) external nonReentrant {
+    function claimStream(bytes32 claimId, address beneficiary) external nonReentrant {
         Claim storage c = claims[claimId];
 
         require(c.status == 1,                     "claim not active");
         require(msg.sender == c.wallet,            "not claimant");
         require(block.timestamp >= c.cooldownEnds, "cooldown active");
         require(c.streamed < c.entitlement,        "already completed");
+        require(
+            keccak256(abi.encodePacked(beneficiary)) == stakes[c.wallet].beneficiaryHash,
+            "wrong beneficiary"
+        );
 
         // Vested so far: linear from cooldownEnds to vestingEnds
         uint256 elapsed     = _min(block.timestamp, uint256(c.vestingEnds)) - uint256(c.cooldownEnds);
@@ -398,16 +413,14 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
         emit ClaimStreamed(claimId, c.wallet, transfer, c.streamed);
 
-        address beneficiary_ = stakes[c.wallet].beneficiary;
-
         if (c.streamed >= c.entitlement) {
             c.status = 2;
             stakes[c.wallet].claimActive = false;
-            emit PointsConfirmed(beneficiary_, LOCK_PERIOD / 1 days, LOCK_PERIOD / 1 days);
+            emit PointsConfirmed(beneficiary, LOCK_PERIOD / 1 days, LOCK_PERIOD / 1 days);
             emit ClaimCompleted(claimId, c.wallet);
         }
 
-        (bool ok,) = beneficiary_.call{value: transfer}("");
+        (bool ok,) = beneficiary.call{value: transfer}("");
         require(ok, "ETH transfer failed");
     }
 
@@ -426,6 +439,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
         c.status = 3; // cancelled
         stakes[c.wallet].claimActive = false;
+        stakes[c.wallet].withdrawn   = false;  // restore principal recoverability
 
         emit ClaimCancelled(claimId, c.wallet);
     }

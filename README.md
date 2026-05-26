@@ -22,7 +22,7 @@ No committee. No vote. Same inputs, same output, every time.
 
 | | |
 |---|---|
-| **Contract** | [`0x81615Ea14f7be5ac97F64AEDb8ebe01928A82f7b`](https://etherscan.io/address/0x81615ea14f7be5ac97f64aedb8ebe01928a82f7b) |
+| **Contract** | [`0xDAa9EC45a4da6F7313fd13bC6A460bd619D650Ae`](https://etherscan.io/address/0x81615ea14f7be5ac97f64aedb8ebe01928a82f7b) |
 | **Network** | Ethereum Mainnet |
 | **Verified source** | [Etherscan #code](https://etherscan.io/address/0x81615ea14f7be5ac97f64aedb8ebe01928a82f7b#code) |
 | **Compiler** | Solidity 0.8.24, optimizer 200 runs |
