@@ -1,0 +1,25 @@
+# Foundry build artifacts
+out/
+cache/
+.cache/
+broadcast/
+
+# Environment & secrets
+.env
+.env.*
+
+# Dependencies
+lib/
+
+# macOS
+.DS_Store
+
+# Local outputs / scripts not for public repo
+api/
+safu/
+demo/
+outputs/
+scenarios/
+tests/
+*.png
+*.jpg
