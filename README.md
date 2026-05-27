@@ -41,6 +41,14 @@ The oracle scoring engine is off-chain and closed source. What's on-chain is the
 
 ---
 
+## Events — indexing notes
+
+- **`PointsEarned`** is indexed by `keccak256(beneficiary)`. Hash the beneficiary address before querying logs — querying the raw address will return no results.
+
+## Known constraints (v5)
+
+- **`MAX_STAKERS = 50`** is an immutable constant. `setMaxPoolSize` controls the ETH cap but cannot override the staker count ceiling. Increasing the staker limit requires redeployment (v6).
+
 ## Compile
 
 ```bash

@@ -375,6 +375,8 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
      * pool growth after claim helps; pool shrinkage never hurts.
      * If the daily cap is exhausted, reverts — caller retries next calendar day.
      * Stake is forfeited on completion (principal stays in pool as reserve).
+     * @dev Integer truncation in vestedTotal loses up to 1 wei per call. Dust is recovered
+     * on the final call: _min caps elapsed to VESTING, making vestedTotal == entitlement exactly.
      */
     function claimStream(bytes32 claimId, address beneficiary) external nonReentrant {
         Claim storage c = claims[claimId];
@@ -432,6 +434,8 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
      * @notice F1: owner cancels an active claim before it completes.
      * Any ETH already streamed is not recovered. Remaining entitlement is cancelled.
      * Stake is permanently forfeited (set at submitClaim) — withdrawal is NOT restored.
+     * @dev Re-submitClaim for this claimId is permanently blocked after cancellation.
+     * Use approveOverride (F2) if re-evaluation is needed.
      */
     function cancelClaim(bytes32 claimId) external onlyOwner {
         Claim storage c = claims[claimId];
