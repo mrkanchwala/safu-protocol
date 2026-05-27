@@ -1,4 +1,7 @@
 // ─── SAFU CONFIG ──────────────────────────────────────────────────────────────
+// WALLETCONNECT_PROJECT_ID is intentionally public — WalletConnect requires it
+// in client-side code. Security gate: domain allowlist MUST be enabled in
+// WalletConnect Cloud (cloud.walletconnect.com) to prevent use on other domains.
 window.CONFIG = {
   CONTRACT_ADDRESS:         '0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480',
   SAFU_API_BASE:            'https://safustaking.com/api',

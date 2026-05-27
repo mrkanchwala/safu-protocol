@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
-# deploy-safu-website.sh — Deploy SAFU website to safustaking.com (VPS 46.225.110.140)
+# deploy-safu-website.sh — Deploy SAFU website to safustaking.com
 # Source: SAFU3.0/website/ → /var/www/safustaking/
 # Usage: bash deploy-safu-website.sh
+#
+# Requires SSH config alias — add to ~/.ssh/config (not committed):
+#   Host safu-vps
+#       HostName <vps-ip>
+#       User murtaza
+#       IdentityFile ~/.ssh/id_ed25519
+# Or: export SAFU_VPS=user@host to override at runtime.
 
 set -euo pipefail
 
-VPS="murtaza@46.225.110.140"
+VPS="${SAFU_VPS:-safu-vps}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOCAL_DIR="$SCRIPT_DIR/website/"
 REMOTE_DIR="/var/www/safustaking/"
