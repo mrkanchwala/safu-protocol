@@ -19,7 +19,7 @@
            img-src 'self' data: https://imagedelivery.net https://registry.walletconnect.com;
            frame-src https://verify.walletconnect.org;">
 
-<link rel="stylesheet" href="css/styles.css?v=22">
+<link rel="stylesheet" href="css/styles.css?v=23">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
@@ -41,6 +41,7 @@
       <a href="#stake" class="nav-hide">stake</a>
       <a href="#claim" class="nav-hide">claim</a>
       <a href="#about" class="nav-hide">about</a>
+      <a href="#security" class="nav-hide">security</a>
       <a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer" class="nav-hide">contract ↗</a>
       <button id="btn-connect">[ connect wallet ]</button>
       <button id="btn-disconnect" class="d-none">[ disconnect ]</button>
@@ -304,6 +305,83 @@
   </div>
 </section>
 
+<!-- ── SECURITY ───────────────────────────────────────────────────── -->
+<hr class="section-divider">
+<section id="security">
+  <div class="container">
+    <div class="section-label"><span>//</span> 04 — security</div>
+    <h2>Audited. Verified.</h2>
+
+    <div class="sec-grid">
+
+      <!-- Hashlock AI Audit -->
+      <div class="terminal sec-panel">
+        <div class="terminal-bar">
+          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+          <span class="terminal-title">hashlock-ai-audit.txt — 2026-05-27</span>
+        </div>
+        <div class="sec-label-inner">[ Hashlock AI Audit ]</div>
+        <table class="sec-table">
+          <tr><td class="sev sev-cr">CRITICAL</td><td class="sev-count">0</td><td class="sev-note">—</td></tr>
+          <tr><td class="sev sev-hi">HIGH</td><td class="sev-count">1 → 0</td><td class="sev-note">cancelClaim accounting isolation</td></tr>
+          <tr><td class="sev sev-me">MEDIUM</td><td class="sev-count">1 → 0</td><td class="sev-note">tier cap enforcement in submitClaim</td></tr>
+          <tr><td class="sev sev-lo">LOW</td><td class="sev-count">6 → 0</td><td class="sev-note">beneficiary gates, dedup, whenNotPaused</td></tr>
+          <tr><td class="sev sev-in">INFO</td><td class="sev-count">3</td><td class="sev-note">by design — C1 / C2 / I2</td></tr>
+        </table>
+        <div class="sec-verdict-ok">✓ all critical findings resolved</div>
+        <a href="https://aiaudit.hashlock.com/audit/890ab9ec-8311-423f-9bd1-7d4a3cce48f8" target="_blank" rel="noopener noreferrer" class="sec-ext-link">view full report ↗</a>
+      </div>
+
+      <!-- Halmos Symbolic Execution -->
+      <div class="terminal sec-panel">
+        <div class="terminal-bar">
+          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+          <span class="terminal-title">halmos-symbolic.txt — 2026-05-27</span>
+        </div>
+        <div class="sec-label-inner">[ Halmos Symbolic Execution — a16z ]</div>
+        <div class="halmos-score">10 / 10</div>
+        <div class="halmos-sub">properties verified — zero counterexamples</div>
+        <ul class="check-list">
+          <li>cancelClaim never sends ETH (forfeit enforced)</li>
+          <li>totalStaked decremented on cancel</li>
+          <li>Withdrawal permanently blocked after submitClaim</li>
+          <li>amount zeroed + claimActive=false after cancel</li>
+          <li>coSigner ≠ owner at all times</li>
+          <li>transferOwnership to coSigner always reverts</li>
+          <li>totalStaked + totalFailedPayouts ≤ pool balance</li>
+          <li>Entitlement above tier A cap always reverts (symbolic)</li>
+          <li>Entitlement above MAX_COVERAGE always reverts (symbolic)</li>
+          <li>Cancelled claim cannot be streamed</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom row -->
+    <div class="sec-mini-grid">
+      <div class="sec-mini-card">
+        <div class="sec-mini-title">[ internal CSO — comprehensive ]</div>
+        <div class="sec-sev-row">
+          <span class="sev sev-cr">CRITICAL 0</span>
+          <span class="sev sev-hi">HIGH 0</span>
+          <span class="sev sev-me">MEDIUM 0</span>
+          <span class="sev sev-lo">LOW 0</span>
+        </div>
+        <div class="sec-verdict-ok">✓ PASS — 2026-05-27</div>
+      </div>
+      <div class="sec-mini-card">
+        <div class="sec-mini-title">[ forge test suite ]</div>
+        <div class="sec-mini-big">37 / 37</div>
+        <div class="sec-mini-sub">tests pass — all fixes covered</div>
+      </div>
+      <div class="sec-mini-card">
+        <div class="sec-mini-title">[ contract ]</div>
+        <div class="sec-mini-sub">Solidity 0.8.25 · BUSL-1.1</div>
+        <a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer" class="sec-ext-link">etherscan verified ↗</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── FOOTER ─────────────────────────────────────────────────────── -->
 <footer>
   <div class="container">
@@ -340,16 +418,16 @@
 <!-- ── SCRIPTS — load order matters ────────────────────────────────── -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="js/config.js?v=22"></script>
-<script src="js/abi.js?v=22"></script>
-<script src="js/state.js?v=22"></script>
-<script src="js/ui.js?v=22"></script>
-<script src="js/init.js?v=22"></script>
-<script src="js/wallet.js?v=22"></script>
-<script src="js/stake.js?v=22"></script>
-<script src="js/claim.js?v=22"></script>
-<script src="js/stream.js?v=22"></script>
-<script src="js/events.js?v=22"></script>
+<script src="js/config.js?v=23"></script>
+<script src="js/abi.js?v=23"></script>
+<script src="js/state.js?v=23"></script>
+<script src="js/ui.js?v=23"></script>
+<script src="js/init.js?v=23"></script>
+<script src="js/wallet.js?v=23"></script>
+<script src="js/stake.js?v=23"></script>
+<script src="js/claim.js?v=23"></script>
+<script src="js/stream.js?v=23"></script>
+<script src="js/events.js?v=23"></script>
 
 </body>
 </html>
