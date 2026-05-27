@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.25;
 
 import "forge-std/Script.sol";
 import "../contracts/SAFUPool.sol";
@@ -53,12 +53,10 @@ contract DeployScript is Script {
 
         vm.startBroadcast(deployerPk);
 
-        SAFUPool pool = new SAFUPool(oracle_, maxPool_);
+        // v6: coSigner passed directly to constructor — 2-of-2 active from block 0
+        SAFUPool pool = new SAFUPool(oracle_, coSigner_, maxPool_);
         console.log("SAFUPool deployed:", address(pool));
-
-        // H0 gate: set coSigner immediately — 2-of-2 is never 1-of-1
-        pool.setCoSigner(coSigner_);
-        console.log("setCoSigner done: 2-of-2 active");
+        console.log("CoSigner active from deploy: 2-of-2 live");
 
         vm.stopBroadcast();
 

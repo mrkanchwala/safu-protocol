@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAFU — System Assurances, F**k You.</title>
+<meta name="description" content="Stake ETH. Get covered. If your wallet gets drained — payout activates. No committee. No vote.">
+
+<!-- Security headers via meta (nginx headers are primary — see nginx config) -->
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'self';
+           script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com;
+           style-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;
+           font-src https://fonts.gstatic.com;
+           connect-src 'self' https://safustaking.com https://cdn.jsdelivr.net wss://relay.walletconnect.com https://relay.walletconnect.com wss://relay.walletconnect.org https://verify.walletconnect.org https://pulse.walletconnect.org https://api.web3modal.com;
+           img-src 'self' data: https://imagedelivery.net https://registry.walletconnect.com;
+           frame-src https://verify.walletconnect.org;">
+
+<link rel="stylesheet" href="css/styles.css?v=22">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<!-- ── WALLET PICKER MODAL ──────────────────────────────────────── -->
+<div class="wallet-modal" id="wallet-modal">
+  <div class="wallet-box">
+    <h3>> select wallet</h3>
+    <div id="wallet-list"></div>
+    <button class="wallet-close" id="btn-wallet-close">[ cancel ]</button>
+  </div>
+</div>
+
+<!-- ── NAV ──────────────────────────────────────────────────────── -->
+<nav>
+  <div class="container">
+    <a href="/" class="logo">> SAFU<span class="cursor"></span></a>
+    <div class="nav-links">
+      <a href="#stake" class="nav-hide">stake</a>
+      <a href="#claim" class="nav-hide">claim</a>
+      <a href="#about" class="nav-hide">about</a>
+      <a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer" class="nav-hide">contract ↗</a>
+      <button id="btn-connect">[ connect wallet ]</button>
+      <button id="btn-disconnect" class="d-none">[ disconnect ]</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="container">
+    <h1>
+      <span class="red">System Assurances,<br>F**k You.</span><br>
+      <span class="cyan">Stake in SAFU.</span>
+    </h1>
+    <p class="hero-sub">
+      Your insurer had assurances. SAFU has <strong>math.</strong><br>
+      Stake ETH. Get covered. If your wallet gets drained —
+      <strong>payout activates automatically.</strong>
+      No committee. No vote. No waiting room.
+    </p>
+    <div class="hero-actions">
+      <button class="btn btn-cyan" id="btn-hero-stake">[ stake now ]</button>
+      <button class="btn btn-dim"  id="btn-hero-learn">[ learn more ]</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS ─────────────────────────────────────────────────────── -->
+<div class="stats-bar">
+  <div class="container">
+    <div>
+      <div class="stat-val">100%</div>
+      <div class="stat-lbl">CATCH RATE</div>
+      <div class="stat-note">*<a href="#about" class="link-inherit">test conditions — see below ↓</a></div>
+    </div>
+    <div>
+      <div class="stat-val">0.015Ξ</div>
+      <div class="stat-lbl">STAKE AMOUNT</div>
+    </div>
+    <div>
+      <div class="stat-val">0.25Ξ</div>
+      <div class="stat-lbl">MAX COVERAGE</div>
+    </div>
+    <div>
+      <div class="stat-val">90d</div>
+      <div class="stat-lbl">COVERAGE WINDOW</div>
+    </div>
+    <div>
+      <div class="stat-val" id="stat-stakers">—</div>
+      <div class="stat-lbl">ACTIVE STAKERS</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STAKE ─────────────────────────────────────────────────────── -->
+<section id="stake">
+  <div class="container">
+    <div class="section-label"><span>//</span> 01 — stake</div>
+    <h2>Get covered.</h2>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span class="terminal-title">safu-stake.sh</span>
+      </div>
+
+      <div class="step">
+        <div class="step-num">[01]</div>
+        <div class="step-content">
+          <div class="step-title">Connect your wallet</div>
+          <div class="step-desc">MetaMask, Rabby, Rainbow, Trust, Safe — any EIP-1193 compatible wallet.</div>
+          <div class="mt-sm">
+            <button class="btn btn-cyan" id="btn-stake-connect">[ connect wallet ]</button>
+          </div>
+          <div class="status-box" id="status-wallet"></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">[02]</div>
+        <div class="step-content">
+          <div class="step-title">Set your beneficiary</div>
+          <div class="step-desc">Payouts stream here if a claim is approved. Must be a <strong>different address</strong> from your staker wallet.</div>
+          <div class="input-row">
+            <input class="term-input" id="input-beneficiary" type="text" placeholder="0x... beneficiary address" autocomplete="off" spellcheck="false" />
+          </div>
+          <div class="status-box warn show mt-sm">
+            ⚠ Do not enter your own staker wallet as beneficiary — payouts will be unclaimable. Use a separate cold wallet or trusted address.
+          </div>
+          <div class="status-box err mt-xs" id="status-beneficiary-match">
+            ✗ Beneficiary matches your staker wallet — change this before proceeding.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">[03]</div>
+        <div class="step-content">
+          <div class="step-title">Get oracle approval</div>
+          <div class="step-desc">The SAFU oracle scores your wallet and issues a signed approval.</div>
+          <div class="mt-sm">
+            <button class="btn btn-cyan" id="btn-enroll" disabled>[ get approval ]</button>
+          </div>
+          <div class="status-box" id="status-enroll"></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">[04]</div>
+        <div class="step-content">
+          <div class="step-title">Stake 0.015 ETH</div>
+          <div class="step-desc">Your wallet will prompt for confirmation. <strong>Coverage activates immediately after the tx confirms.</strong></div>
+          <div class="mt-sm">
+            <button class="btn btn-red" id="btn-stake" disabled>[ stake 0.015Ξ ]</button>
+          </div>
+          <div class="status-box" id="status-stake"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-box info mt-lg" id="active-stake-box">
+      <div id="active-stake-content"></div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ── CLAIM ─────────────────────────────────────────────────────── -->
+<section id="claim">
+  <div class="container">
+    <div class="section-label"><span>//</span> 02 — claim</div>
+    <h2>If you get drained.</h2>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span class="terminal-title">safu-claim.sh</span>
+      </div>
+
+      <div class="step">
+        <div class="step-num">[01]</div>
+        <div class="step-content">
+          <div class="step-title">Scan the drain transaction</div>
+          <div class="step-desc">Paste the Ethereum tx hash of the drain. The oracle scores it. <strong>Scanning is safe — no commitment, no consequences.</strong></div>
+          <div class="input-row">
+            <input class="term-input" id="input-claim-tx" type="text" placeholder="0x... drain tx hash" autocomplete="off" spellcheck="false" />
+            <button class="btn btn-cyan" id="btn-scan">[ scan ]</button>
+          </div>
+          <div class="status-box" id="status-scan"></div>
+        </div>
+      </div>
+
+      <div id="confirm-claim-section" class="d-none">
+        <div class="step">
+          <div class="step-num">[02]</div>
+          <div class="step-content">
+            <div class="step-title text-cyan">Drain detected — confirm claim submission.</div>
+            <div class="step-desc">The oracle confirmed a qualifying drain. Before submitting:</div>
+            <div class="status-box err show mt-sm mb-sm">
+              ⚠ Submitting this claim permanently forfeits your <strong>0.015 ETH stake</strong>. Your beneficiary will begin receiving the payout stream. <strong>This cannot be undone — no recourse once submitted.</strong>
+            </div>
+            <div class="input-row">
+              <button class="btn btn-red" id="btn-confirm-claim">[ confirm — submit claim ]</button>
+              <button class="btn btn-dim" id="btn-cancel-claim">[ cancel ]</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="auto-claim-section" class="d-none">
+        <div class="step">
+          <div class="step-num">[03]</div>
+          <div class="step-content">
+            <div class="step-title text-cyan">Claim submitted.</div>
+            <div class="step-desc">Your claim has been submitted for activation. Payout will begin streaming to your beneficiary. <strong>No further action required.</strong></div>
+            <div class="status-box ok show" id="status-auto-claim"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="dispute-section" class="d-none">
+        <div class="step">
+          <div class="step-num">[02]</div>
+          <div class="step-content">
+            <div class="step-title text-warn">Below threshold — request human review.</div>
+            <div class="step-desc">The oracle did not detect a qualifying drain. Submit a dispute for manual review.</div>
+            <div class="input-row input-col">
+              <input class="term-input" id="dispute-tx"     type="text" placeholder="0x... tx hash" readonly spellcheck="false" />
+              <input class="term-input" id="dispute-wallet" type="text" placeholder="0x... your wallet address" spellcheck="false" />
+              <textarea class="term-input" id="dispute-desc" placeholder="Describe what happened — include dates, amounts, any relevant context."></textarea>
+              <button class="btn btn-dim" id="btn-dispute">[ submit for review ]</button>
+            </div>
+            <div class="status-box" id="status-dispute"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Claim stream pull -->
+    <div class="mt-xl">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+          <span class="terminal-title">safu-stream.sh — pull your daily entitlement</span>
+        </div>
+        <div class="step">
+          <div class="step-num">[—]</div>
+          <div class="step-content">
+            <div class="step-title">Pull claim stream</div>
+            <div class="step-desc">Call once per day after your claim activates. Claim ID is emitted in the <strong>ClaimActivated</strong> event on Etherscan.</div>
+            <div class="input-row">
+              <input class="term-input" id="input-claim-id" type="text" placeholder="0x... claim ID (bytes32)" spellcheck="false" />
+            </div>
+            <div class="input-row mt-xs">
+              <input class="term-input" id="input-stream-beneficiary" type="text" placeholder="0x... your beneficiary address" spellcheck="false" autocomplete="off" />
+              <button class="btn btn-cyan" id="btn-stream">[ pull stream ]</button>
+            </div>
+            <div class="status-box" id="status-stream"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ── ABOUT ─────────────────────────────────────────────────────── -->
+<section id="about">
+  <div class="container">
+    <div class="section-label"><span>//</span> 03 — about</div>
+    <h2>What is SAFU?</h2>
+    <div class="about-body">
+      <div class="about-card">
+        <h3>[ the problem ]</h3>
+        <p>The system assured you. Your exchange had insurance. Your wallet provider had guarantees.
+        When your wallet got drained — the system shrugged.
+        <strong>No recourse. No payout. No accountability.</strong></p>
+      </div>
+      <div class="about-card">
+        <h3>[ the protocol ]</h3>
+        <p>SAFU is a staking protocol with a protection layer.
+        Stake ETH. Get covered. If a drain is verified —
+        <strong>payout activates deterministically.</strong>
+        No humans in the loop. No governance vote.</p>
+      </div>
+      <div class="about-card">
+        <h3>[ the oracle ]</h3>
+        <p>Every submitted drain gets scanned by the SAFU oracle — a closed-source fraud detection engine trained on verified on-chain drain patterns.
+        <strong>Same inputs. Same verdict. Every time.</strong></p>
+      </div>
+      <div class="about-card">
+        <h3>[ the catch rate ]</h3>
+        <p>100% of confirmed drain transactions detected in controlled testing.*
+        Human review is available for disputed verdicts.
+        <br><br>
+        <span class="note">*Based on test conditions using verified historical hacks. Real-world performance may vary.</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <span>SAFU — System Assurances, F**k You</span>
+      <a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">github ↗</a>
+      <a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer">etherscan ↗</a>
+    </div>
+
+    <!-- Social + contact -->
+    <div class="footer-social">
+      <!-- X / Twitter — replace # with your handle URL -->
+      <a href="https://x.com/safu_staking" target="_blank" rel="noopener noreferrer" title="X / Twitter">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+        X
+      </a>
+      <!-- Telegram — replace # with your TG link -->
+      <a href="https://t.me/+sza3oozmzzJlNzk0" target="_blank" rel="noopener noreferrer" title="Telegram">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+        </svg>
+        Telegram
+      </a>
+    </div>
+
+    <div class="contract-addr">
+      <span class="text-dim">contract:</span> 0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480
+    </div>
+  </div>
+</footer>
+
+<!-- ── SCRIPTS — load order matters ────────────────────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="js/config.js?v=22"></script>
+<script src="js/abi.js?v=22"></script>
+<script src="js/state.js?v=22"></script>
+<script src="js/ui.js?v=22"></script>
+<script src="js/init.js?v=22"></script>
+<script src="js/wallet.js?v=22"></script>
+<script src="js/stake.js?v=22"></script>
+<script src="js/claim.js?v=22"></script>
+<script src="js/stream.js?v=22"></script>
+<script src="js/events.js?v=22"></script>
+
+</body>
+</html>

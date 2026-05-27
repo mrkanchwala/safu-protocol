@@ -22,10 +22,10 @@ No committee. No vote. Same inputs, same output, every time.
 
 | | |
 |---|---|
-| **Contract** | [`0xDAa9EC45a4da6F7313fd13bC6A460bd619D650Ae`](https://etherscan.io/address/0x81615ea14f7be5ac97f64aedb8ebe01928a82f7b) |
+| **Contract** | v6 — deploying soon |
 | **Network** | Ethereum Mainnet |
-| **Verified source** | [Etherscan #code](https://etherscan.io/address/0x81615ea14f7be5ac97f64aedb8ebe01928a82f7b#code) |
-| **Compiler** | Solidity 0.8.24, optimizer 200 runs |
+| **Verified source** | Sourcify + Etherscan — address published at deploy |
+| **Compiler** | Solidity 0.8.25, optimizer 200 runs |
 
 ---
 
@@ -45,9 +45,11 @@ The oracle scoring engine is off-chain and closed source. What's on-chain is the
 
 - **`PointsEarned`** is indexed by `keccak256(beneficiary)`. Hash the beneficiary address before querying logs — querying the raw address will return no results.
 
-## Known constraints (v5)
+## Known constraints (v6)
 
-- **`MAX_STAKERS = 50`** is an immutable constant. `setMaxPoolSize` controls the ETH cap but cannot override the staker count ceiling. Increasing the staker limit requires redeployment (v6).
+- **`MAX_STAKERS = 50`** is an immutable constant. `setMaxPoolSize` controls the ETH cap but cannot override the staker count ceiling. Increasing the staker limit requires redeployment.
+
+- **Stake forfeiture on claim (by design):** When `submitClaim` runs, the staker's 0.015 ETH principal is permanently forfeited — regardless of claim outcome. If the owner later determines the claim was a false positive and calls `cancelClaim`, the stake is not returned. Forfeiture is an intentional penalty mechanism, not a bug. The forfeited ETH remains in the pool as surplus.
 
 ## Compile
 

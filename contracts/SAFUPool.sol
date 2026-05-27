@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.24;
+pragma solidity 0.8.25;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -8,19 +8,36 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
- * SAFUPool v5 — IBW staking pool with payout controls.
+ * SAFUPool v6 — IBW staking pool with payout controls.
+ * Compiler: 0.8.25 (locked — no floating pragma, compiler bug resolved).
  *
  * ETH-only. 0.015 ETH stake secures 0.25 ETH coverage for 90 days.
  * Oracle-gated enrollment: off-chain fraud scanner signs tier approval;
  * on-chain contract verifies via ECDSA before accepting stake.
  *
- * Payout controls added in v3:
- *   - submitClaim: owner registers a verified loss — auto-activates (deterministic, no vote needed)
+ * Payout controls:
+ *   - submitClaim: oracle or owner registers a verified loss — auto-activates
  *   - claimStream: pull-payment; claimant calls each day; 100% linear over 45 days
- *   - 2%/day outflow cap on totalStakedSnapshot — no exemptions, pull queued implicitly
+ *   - 2%/day outflow cap on totalStakedSnapshot — no exemptions
  *   - Stake forfeited on submission — permanent regardless of claim outcome
- *   - F1 cancelClaim: onlyOwner; cancels if false positive; principal stays in pool
- *   - F2 approveOverride: 2-of-2; corrects false negatives or user-disputed entitlements
+ *   - F1 cancelClaim: onlyOwner; cancels if false positive; principal permanently forfeited (penalty)
+ *   - F2 approveOverride: 2-of-2; corrects false negatives or disputed entitlements
+ *
+ * v6 security fixes (Hashlock audit 2026-05-27):
+ *   H3   — totalStaked decremented on claim completion
+ *   H4   — slotReleased set in _executeOverride (prevents double-decrement)
+ *   M1   — completed claims blocked from override (no double payout)
+ *   M4   — failed ETH transfer stored in failedPayouts; rescueFailedPayout() added
+ *   M5   — claimId validated on-chain in approveOverride
+ *   M6   — claimStream gated by whenNotPaused
+ *   L1   — reasonHash auto-revoked after stake
+ *   L3   — releaseExpiredSlot blocked on suspended wallets
+ *   L4   — PointsConfirmed emits correct wallet address (not beneficiary)
+ *   G2   — poolId and communityLabel removed
+ *   C1   — emergencyWithdraw limited to surplus (balance - totalStaked - totalFailedPayouts)
+ *   C2   — oracle claim rate limit: max 2% of MAX_STAKERS per 24h (= 1/day at 50 stakers)
+ *   I2   — setBeneficiary gated by whenNotPaused
+ *   COMP — pragma locked to 0.8.25; LostStorageArrayWriteOnSlotOverflow resolved
  *
  * IBW constraints (demo-economics — disclose at Istanbul):
  *   50 stakers × 0.015 ETH = 0.75 ETH pool
@@ -38,37 +55,42 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     // Constants
     // -----------------------------------------------------------------------
 
-    uint256 public constant MIN_STAKE       = 0.015 ether;
-    uint256 public constant MAX_COVERAGE    = 0.25 ether;
-    uint64  public constant LOCK_PERIOD     = 90 days;
-    uint256 public constant MAX_STAKERS     = 50;
+    uint256 public constant MIN_STAKE        = 0.015 ether;
+    uint256 public constant MAX_COVERAGE     = 0.25 ether;
+    uint64  public constant LOCK_PERIOD      = 90 days;
+    uint256 public constant MAX_STAKERS      = 50;
 
-    uint256 public constant COOLDOWN        = 7 days;
-    uint256 public constant VESTING         = 45 days;
-    uint256 public constant OUTFLOW_CAP_BPS = 200;   // 2% — no exemptions
+    uint256 public constant COOLDOWN         = 7 days;
+    uint256 public constant VESTING          = 45 days;
+    uint256 public constant OUTFLOW_CAP_BPS  = 200;   // 2%/day outflow cap
+    uint256 public constant CLAIM_RATE_BPS   = 200;   // C2: 2% of MAX_STAKERS per day via oracle
 
     // -----------------------------------------------------------------------
     // State
     // -----------------------------------------------------------------------
 
     address public oracle;
-    address public coSigner;    // second key for 2-of-2 claim approval/override
+    address public coSigner;
 
     uint256 public totalStakers;
     uint256 public totalStaked;
     uint256 public maxPoolSize;
     uint256 public totalEverStaked;
 
-    uint256 public dailyOutflow;    // ETH paid out in current calendar day
-    uint256 public lastOutflowDay;  // block.timestamp / 1 days at last cap reset
+    uint256 public dailyOutflow;
+    uint256 public lastOutflowDay;
 
-    bytes32 public poolId;
-    string  public communityLabel;
+    // C2: oracle daily claim rate limiting
+    uint256 public dailyClaimCount;
+    uint256 public lastClaimDay;
 
-    mapping(address => StakeRecord)              public stakes;
-    mapping(bytes32 => bool)                     public revokedApprovals;
-    mapping(bytes32 => Claim)                    public claims;
-    mapping(bytes32 => OverrideRequest)          public pendingOverrides;
+    mapping(address => StakeRecord)     public stakes;
+    mapping(bytes32 => bool)            public revokedApprovals;
+    mapping(bytes32 => Claim)           public claims;
+    mapping(bytes32 => OverrideRequest) public pendingOverrides;
+    mapping(address => uint256)         public failedPayouts;     // M4: rescue bucket for stuck ETH
+    uint256 public totalFailedPayouts;                           // M4+: total pending rescue — excluded from emergencyWithdraw surplus
+    mapping(address => bool)            public hasEverStaked;     // L6: OGStaker dedup — prevents re-stake from re-emitting event
 
     // -----------------------------------------------------------------------
     // Structs
@@ -83,7 +105,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         bool    withdrawn;
         bool    suspended;    // owner can block payout eligibility; does not block principal withdrawal
         bool    claimActive;  // true while a claim is open — blocks withdrawal
-        bool    slotReleased; // slot freed on lock expiry without withdrawal — totalStakers already decremented
+        bool    slotReleased; // slot freed on lock expiry — totalStakers already decremented
     }
 
     struct Claim {
@@ -94,7 +116,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         uint64   cooldownEnds;        // activation timestamp + 7d
         uint64   vestingEnds;         // cooldownEnds + 45d (day 52 from approval)
         uint256  totalStakedSnapshot; // cap denominator — fixed at activation, not live balance
-        uint8    status;              // 0=unused  1=active 2=completed 3=cancelled 4=overridden
+        uint8    status;              // 0=unused 1=active 2=completed 3=cancelled 4=overridden
     }
 
     struct OverrideRequest {
@@ -123,6 +145,8 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     event SlotReleased(address indexed wallet);
     event MaxPoolSizeUpdated(uint256 newSize);
     event EmergencyWithdrawn(uint256 amount);
+    event PayoutFailed(bytes32 indexed claimId, address indexed beneficiary, uint256 amount);  // M4
+    event PayoutRescued(address indexed beneficiary, uint256 amount);                          // M4
 
     event ClaimSubmitted(bytes32 indexed claimId, address indexed wallet, bytes32 txHash, uint256 entitlement);
     event ClaimActivated(bytes32 indexed claimId, address indexed wallet, uint64 cooldownEnds, uint64 vestingEnds);
@@ -131,6 +155,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     event ClaimCancelled(bytes32 indexed claimId, address indexed wallet);
     event OverrideApproved(bytes32 indexed claimId, address approver);
     event OverrideExecuted(bytes32 indexed claimId, address indexed wallet, uint256 entitlement);
+    event OverrideCancelled(bytes32 indexed claimId);  // M4: pending override revoked by owner
 
     // -----------------------------------------------------------------------
     // Constructor
@@ -138,16 +163,18 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
     /**
      * @param oracle_      Address of the off-chain fraud scanner signing key.
+     * @param coSigner_    Address of the second approval key (must differ from owner).
      * @param maxPoolSize_ Initial pool ETH cap.
      *
-     * coSigner defaults to owner (msg.sender). Call setCoSigner() before mainnet
-     * to move the second approval key to a separate hardware wallet.
+     * M3 fix: coSigner is set at deploy time — no post-deploy setCoSigner call required.
      */
-    constructor(address oracle_, uint256 maxPoolSize_) Ownable(msg.sender) {
-        require(oracle_ != address(0), "zero oracle");
+    constructor(address oracle_, address coSigner_, uint256 maxPoolSize_) Ownable(msg.sender) {
+        require(oracle_    != address(0),   "zero oracle");
+        require(coSigner_  != address(0),   "zero coSigner");
+        require(coSigner_  != msg.sender,   "coSigner must differ from owner");
         oracle      = oracle_;
+        coSigner    = coSigner_;
         maxPoolSize = maxPoolSize_;
-        coSigner    = msg.sender;
     }
 
     // -----------------------------------------------------------------------
@@ -160,6 +187,8 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
      * The oracle signs: keccak256(abi.encodePacked(
      *   "SAFU_STAKE_APPROVAL", address(this), block.chainid, wallet, tier, deadline, reasonHash
      * )) then wraps as an Ethereum signed message (EIP-191).
+     *
+     * L1 fix: reasonHash is auto-revoked after use — one approval = one stake only.
      */
     function stakeETH(
         uint8          tier,
@@ -177,6 +206,9 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         require(totalStaked + msg.value <= maxPoolSize, "pool cap exceeded");
         require(beneficiary != address(0),              "zero beneficiary");
         require(beneficiary != msg.sender,              "beneficiary cannot be staker");
+        require(beneficiary != oracle,                  "beneficiary cannot be oracle");
+        require(beneficiary != owner(),                 "beneficiary cannot be owner");
+        require(beneficiary != coSigner,                "beneficiary cannot be cosigner");
 
         bytes32 inner = keccak256(abi.encodePacked(
             "SAFU_STAKE_APPROVAL",
@@ -188,7 +220,10 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
             reasonHash
         ));
         bytes32 ethHash = MessageHashUtils.toEthSignedMessageHash(inner);
-        require(ECDSA.recover(ethHash, sig) == oracle,  "invalid oracle sig");
+        require(ECDSA.recover(ethHash, sig) == oracle, "invalid oracle sig");
+
+        // L1: auto-revoke — prevents replay if staker withdraws and tries to re-stake
+        revokedApprovals[reasonHash] = true;
 
         uint64 now_    = uint64(block.timestamp);
         uint64 unlocks = now_ + LOCK_PERIOD;
@@ -198,22 +233,24 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         stakes[msg.sender] = StakeRecord({
             beneficiaryHash: beneficiaryHash,
             amount:          msg.value,
-            tier:         tier,
-            stakedAt:     now_,
-            unlocksAt:    unlocks,
-            withdrawn:    false,
-            suspended:    false,
-            claimActive:  false,
-            slotReleased: false
+            tier:            tier,
+            stakedAt:        now_,
+            unlocksAt:       unlocks,
+            withdrawn:       false,
+            suspended:       false,
+            claimActive:     false,
+            slotReleased:    false
         });
 
         totalStakers++;
-        totalStaked     += msg.value;
+        totalStaked      += msg.value;
+        bool firstStake   = !hasEverStaked[msg.sender];
+        if (firstStake) hasEverStaked[msg.sender] = true;
         totalEverStaked++;
 
         emit Staked(msg.sender, msg.value, tier, unlocks, reasonHash);
         emit PointsEarned(beneficiaryHash, msg.value, now_);
-        if (totalEverStaked <= 50) emit OGStaker(msg.sender, block.timestamp);
+        if (firstStake && totalEverStaked <= 50) emit OGStaker(msg.sender, block.timestamp);
     }
 
     // -----------------------------------------------------------------------
@@ -241,10 +278,11 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         uint256 amount     = s.amount;
         s.withdrawn = true;
         s.amount    = 0;
-        if (!s.slotReleased) totalStakers--;   // already decremented if releaseExpiredSlot was called
+        if (!s.slotReleased) totalStakers--;
         totalStaked -= amount;
 
-        emit PointsConfirmed(beneficiary, daysStaked, daysStaked);
+        // L4: emit staker wallet (msg.sender), not beneficiary address
+        emit PointsConfirmed(msg.sender, daysStaked, daysStaked);
         emit Withdrawn(msg.sender, amount);
 
         (bool ok,) = msg.sender.call{value: amount}("");
@@ -257,13 +295,15 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
     /**
      * @notice Update the wallet that receives claim payouts and points.
-     * Can be changed any time while staked, as long as no claim has been submitted.
-     * Locked once withdrawn == true (covers both claim submission and normal withdrawal).
-     * Two different staker wallets may share the same beneficiary.
+     * Locked once withdrawn == true.
+     * I2 fix: gated by whenNotPaused — cannot change beneficiary during emergency pause.
      */
-    function setBeneficiary(address newBeneficiary) external {
-        require(newBeneficiary != address(0), "zero beneficiary");
-        require(newBeneficiary != msg.sender, "beneficiary cannot be staker");
+    function setBeneficiary(address newBeneficiary) external whenNotPaused {
+        require(newBeneficiary != address(0),   "zero beneficiary");
+        require(newBeneficiary != msg.sender,   "beneficiary cannot be staker");
+        require(newBeneficiary != oracle,       "beneficiary cannot be oracle");
+        require(newBeneficiary != owner(),      "beneficiary cannot be owner");
+        require(newBeneficiary != coSigner,     "beneficiary cannot be cosigner");
         StakeRecord storage s = stakes[msg.sender];
         require(s.amount > 0,  "no stake");
         require(!s.withdrawn,  "stake forfeited");
@@ -278,17 +318,15 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
     /**
      * @notice Free the staker slot once the 90-day lock has expired.
-     *
-     * Callable by anyone (no auth — the condition is objective: clock > unlocksAt).
-     * The staker's ETH remains in the pool; they can still call withdraw() to recover it.
-     * Only the MAX_STAKERS slot is freed — totalStaked is NOT decremented here.
-     * No coverage is granted after lock expiry regardless.
+     * Callable by anyone — condition is objective (clock > unlocksAt).
+     * L3 fix: blocked on suspended wallets — owner must unsuspend before slot can be freed.
      */
     function releaseExpiredSlot(address wallet) external {
         StakeRecord storage s = stakes[wallet];
         require(s.amount > 0,                  "no stake");
         require(!s.withdrawn,                  "already withdrawn");
         require(!s.slotReleased,               "slot already released");
+        require(!s.suspended,                  "wallet suspended");   // L3
         require(block.timestamp >= s.unlocksAt,"lock still active");
         s.slotReleased = true;
         totalStakers--;
@@ -300,11 +338,10 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     // -----------------------------------------------------------------------
 
     /**
-     * @notice Owner registers a verified loss event for a staker.
+     * @notice Oracle or owner registers a verified loss event for a staker.
      *
-     * @param wallet      Staker whose wallet was drained.
-     * @param txHash      Drain transaction hash — forms half of claimId.
-     * @param entitlement Payout amount (wei), pre-computed by the off-chain gate pipeline.
+     * C2 fix: oracle submissions rate-limited to 2% of MAX_STAKERS per 24h (= 1 at 50 stakers).
+     *         Owner bypasses the limit — emergency correction path.
      *
      * claimId = keccak256(abi.encodePacked(wallet, txHash))
      */
@@ -312,26 +349,39 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         address wallet,
         bytes32 txHash,
         uint256 entitlement
-    ) external {
+    ) external whenNotPaused {
         require(msg.sender == oracle || msg.sender == owner(), "not oracle or owner");
         require(wallet != address(0),               "zero wallet");
         require(entitlement > 0,                    "zero entitlement");
         require(entitlement <= MAX_COVERAGE,        "exceeds max coverage");
-        require(stakes[wallet].amount > 0,                        "wallet not staked");
-        require(!stakes[wallet].withdrawn,                        "stake forfeited");
-        require(!stakes[wallet].suspended,                        "stake suspended");
-        require(block.timestamp < stakes[wallet].unlocksAt,       unicode"lock expired — no coverage");
+        require(entitlement <= _tierCap(stakes[wallet].tier), "exceeds tier cap");
+        require(stakes[wallet].amount > 0,          "wallet not staked");
+        require(!stakes[wallet].withdrawn,          "stake forfeited");
+        require(!stakes[wallet].suspended,          "stake suspended");
+        require(block.timestamp < stakes[wallet].unlocksAt, unicode"lock expired — no coverage");
+
+        // C2: rate limit oracle only — owner has no cap (emergency path)
+        if (msg.sender == oracle) {
+            uint256 today = block.timestamp / 1 days;
+            if (today != lastClaimDay) {
+                dailyClaimCount = 0;
+                lastClaimDay    = today;
+            }
+            uint256 dailyLimit = (MAX_STAKERS * CLAIM_RATE_BPS) / 10_000;
+            if (dailyLimit == 0) dailyLimit = 1;   // always allow at least 1 per day
+            require(dailyClaimCount < dailyLimit,  "oracle daily claim limit reached");
+            dailyClaimCount++;
+        }
 
         bytes32 claimId = keccak256(abi.encodePacked(wallet, txHash));
-        require(claims[claimId].entitlement == 0,   "claim exists");
+        require(claims[claimId].entitlement == 0, "claim exists");
 
         // Permanent forfeiture on submission — independent of claim outcome.
-        // Wallet can never withdraw principal or stake again. Only payout path is claimStream.
         stakes[wallet].withdrawn    = true;
         stakes[wallet].claimActive  = true;
         if (!stakes[wallet].slotReleased) totalStakers--;
-        stakes[wallet].slotReleased = true;   // prevents double-decrement if cancelClaim restores withdrawn
-        // totalStaked NOT decremented — principal stays in pool as reserve
+        stakes[wallet].slotReleased = true;
+        // totalStaked NOT decremented here — principal stays in pool as reserve until claim completes
 
         claims[claimId] = Claim({
             wallet:              wallet,
@@ -370,15 +420,15 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     /**
      * @notice Claimant pulls their daily entitlement after the cooldown expires.
      *
-     * Streams proportionally: each second after cooldownEnds accrues 1/VESTING of entitlement.
-     * Subject to 2%/day outflow cap on max(totalStakedSnapshot, live totalStaked) —
-     * pool growth after claim helps; pool shrinkage never hurts.
-     * If the daily cap is exhausted, reverts — caller retries next calendar day.
-     * Stake is forfeited on completion (principal stays in pool as reserve).
-     * @dev Integer truncation in vestedTotal loses up to 1 wei per call. Dust is recovered
-     * on the final call: _min caps elapsed to VESTING, making vestedTotal == entitlement exactly.
+     * M6 fix: whenNotPaused — emergency pause stops all ETH outflow including active streams.
+     * H3 fix: totalStaked decremented when claim completes — accounting stays accurate.
+     * M4 fix: failed ETH transfer stored in failedPayouts — never traps permanently.
+     * L4 fix: PointsConfirmed emits c.wallet (staker), not beneficiary.
+     *
+     * @dev Integer truncation in vestedTotal loses up to 1 wei per call. Dust recovered
+     * on final call: _min caps elapsed to VESTING, making vestedTotal == entitlement exactly.
      */
-    function claimStream(bytes32 claimId, address beneficiary) external nonReentrant {
+    function claimStream(bytes32 claimId, address beneficiary) external nonReentrant whenNotPaused {
         Claim storage c = claims[claimId];
 
         require(c.status == 1,                     "claim not active");
@@ -390,13 +440,11 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
             "wrong beneficiary"
         );
 
-        // Vested so far: linear from cooldownEnds to vestingEnds
         uint256 elapsed     = _min(block.timestamp, uint256(c.vestingEnds)) - uint256(c.cooldownEnds);
         uint256 vestedTotal = (c.entitlement * elapsed) / VESTING;
         uint256 claimable   = vestedTotal - c.streamed;
         require(claimable > 0, "nothing claimable");
 
-        // Daily outflow cap: 2% of totalStakedSnapshot, resets each calendar day
         uint256 today = block.timestamp / 1 days;
         if (today != lastOutflowDay) {
             dailyOutflow   = 0;
@@ -416,14 +464,21 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         emit ClaimStreamed(claimId, c.wallet, transfer, c.streamed);
 
         if (c.streamed >= c.entitlement) {
-            c.status = 2;
+            c.status = 2;   // completed
             stakes[c.wallet].claimActive = false;
-            emit PointsConfirmed(beneficiary, LOCK_PERIOD / 1 days, LOCK_PERIOD / 1 days);
+            totalStaked -= stakes[c.wallet].amount;  // H3: principal slot consumed — remove from pool total
+            stakes[c.wallet].amount = 0;             // H3: zero amount for consistency
+            emit PointsConfirmed(c.wallet, LOCK_PERIOD / 1 days, LOCK_PERIOD / 1 days);  // L4: staker wallet
             emit ClaimCompleted(claimId, c.wallet);
         }
 
+        // M4: don't revert on failed transfer — store for owner rescue
         (bool ok,) = beneficiary.call{value: transfer}("");
-        require(ok, "ETH transfer failed");
+        if (!ok) {
+            failedPayouts[beneficiary] += transfer;
+            totalFailedPayouts         += transfer;
+            emit PayoutFailed(claimId, beneficiary, transfer);
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -431,21 +486,35 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     // -----------------------------------------------------------------------
 
     /**
-     * @notice F1: owner cancels an active claim before it completes.
-     * Any ETH already streamed is not recovered. Remaining entitlement is cancelled.
-     * Stake is permanently forfeited (set at submitClaim) — withdrawal is NOT restored.
-     * @dev Re-submitClaim for this claimId is permanently blocked after cancellation.
-     * Use approveOverride (F2) if re-evaluation is needed.
+     * @notice F1: owner cancels an active claim (false positive).
+     * Any ETH already streamed is not recovered. Remaining entitlement cancelled.
+     * Principal is permanently forfeited — intentional penalty design.
+     * H1 fix: totalStaked decremented and amount zeroed to eliminate accounting inflation.
+     * ETH stays in contract as pool surplus. No refund is issued.
      */
-    function cancelClaim(bytes32 claimId) external onlyOwner {
+    function cancelClaim(bytes32 claimId) external onlyOwner nonReentrant {
         Claim storage c = claims[claimId];
         require(c.status == 1, "claim not active");
 
-        c.status = 3; // cancelled
-        stakes[c.wallet].claimActive = false;
-        stakes[c.wallet].withdrawn   = false;  // restore principal recoverability
+        address wallet = c.wallet;
+        uint256 amount = stakes[wallet].amount;
 
-        emit ClaimCancelled(claimId, c.wallet);
+        c.status = 3;
+        stakes[wallet].claimActive = false;
+        stakes[wallet].amount      = 0;
+        if (amount > 0) totalStaked -= amount;
+
+        emit ClaimCancelled(claimId, wallet);
+    }
+
+    /**
+     * @notice F3: owner revokes a pending 2-of-2 override before it executes.
+     * M4 fix: prevents fraudulent or mistaken overrides from completing after first approval.
+     */
+    function cancelPendingOverride(bytes32 claimId) external onlyOwner {
+        require(pendingOverrides[claimId].wallet != address(0), "no pending override");
+        delete pendingOverrides[claimId];
+        emit OverrideCancelled(claimId);
     }
 
     // -----------------------------------------------------------------------
@@ -453,14 +522,16 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     // -----------------------------------------------------------------------
 
     /**
-     * @notice F2: 2-of-2 manual override for false negatives.
+     * @notice F2: 2-of-2 manual override for false negatives or disputes.
      * Owner and coSigner each call with identical params.
-     * Second call executes immediately — creates the claim in active state,
-     * skipping submitClaim and approveClaim.
+     * Second call executes — creates claim in active state, bypassing submitClaim.
      *
-     * @param claimId    keccak256(abi.encodePacked(wallet, txHash)) — caller computes off-chain
-     * @param wallet     Wallet to receive the override payout
-     * @param txHash     Transaction hash of the drain event
+     * M5 fix: claimId validated on-chain against wallet+txHash — no off-chain trust.
+     * M1 fix: completed claims (status=2) cannot be overridden — prevents double payout.
+     *
+     * @param claimId     keccak256(abi.encodePacked(wallet, txHash)) — validated on-chain
+     * @param wallet      Wallet to receive the override payout
+     * @param txHash      Transaction hash of the drain event
      * @param entitlement Override payout amount (wei)
      */
     function approveOverride(
@@ -468,11 +539,13 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         address wallet,
         bytes32 txHash,
         uint256 entitlement
-    ) external {
+    ) external whenNotPaused {
         require(msg.sender == owner() || msg.sender == coSigner, "not authorized");
+        require(claimId == keccak256(abi.encodePacked(wallet, txHash)), "claimId mismatch");  // M5
         require(wallet != address(0),           "zero wallet");
         require(entitlement > 0,                "zero entitlement");
         require(entitlement <= MAX_COVERAGE,    "exceeds max coverage");
+        require(entitlement <= _tierCap(stakes[wallet].tier), "exceeds tier cap");
         require(stakes[wallet].amount > 0,                  "wallet not staked");
         require(!stakes[wallet].withdrawn,                  "stake withdrawn");
         require(!stakes[wallet].suspended,                  "stake suspended");
@@ -480,7 +553,6 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
         OverrideRequest storage req = pendingOverrides[claimId];
 
-        // Consistency check: second caller must match first caller's params
         if (req.wallet != address(0)) {
             require(req.wallet == wallet,           "wallet mismatch");
             require(req.txHash == txHash,           "txHash mismatch");
@@ -492,8 +564,10 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         }
 
         if (msg.sender == owner()) {
+            require(!req.ownerApproved,    "owner already approved");
             req.ownerApproved = true;
         } else {
+            require(!req.coSignerApproved, "cosigner already approved");
             req.coSignerApproved = true;
         }
 
@@ -511,15 +585,14 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     function _executeOverride(bytes32 claimId) internal {
         OverrideRequest storage req = pendingOverrides[claimId];
 
-        // Cache before delete (storage ref becomes invalid after delete)
         address wallet_      = req.wallet;
         bytes32 txHash_      = req.txHash;
         uint256 entitlement_ = req.entitlement;
 
         delete pendingOverrides[claimId];
 
-        // If a claim already exists in any state, cancel/overwrite it
         Claim storage existing = claims[claimId];
+        require(existing.status != 2, "claim already completed - cannot override");  // M1
         if (existing.status == 1) {
             stakes[existing.wallet].claimActive = false;
         }
@@ -536,19 +609,39 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
             cooldownEnds:        cooldownEnds,
             vestingEnds:         vestingEnds,
             totalStakedSnapshot: totalStaked,
-            status:              1   // active — both sigs already verified
+            status:              1   // active — both sigs verified
         });
 
-        // False-negative override: forfeit stake permanently, same as submitClaim path
         stakes[wallet_].withdrawn   = true;
         stakes[wallet_].claimActive = true;
-        if (!stakes[wallet_].slotReleased) totalStakers--;   // avoid double-decrement if slot already released
+        if (!stakes[wallet_].slotReleased) {
+            totalStakers--;
+            stakes[wallet_].slotReleased = true;   // H4: prevent double-decrement via releaseExpiredSlot
+        }
 
         emit OverrideExecuted(claimId, wallet_, entitlement_);
     }
 
     // -----------------------------------------------------------------------
-    // Owner — suspension scaffold
+    // Owner — rescue failed payouts (M4)
+    // -----------------------------------------------------------------------
+
+    /**
+     * @notice Rescue ETH stuck due to a reverting beneficiary address.
+     * Sends recovered amount to owner for manual redistribution to the staker.
+     */
+    function rescueFailedPayout(address beneficiary) external onlyOwner nonReentrant {
+        uint256 amount = failedPayouts[beneficiary];
+        require(amount > 0, "nothing to rescue");
+        failedPayouts[beneficiary] = 0;
+        totalFailedPayouts        -= amount;
+        emit PayoutRescued(beneficiary, amount);
+        (bool ok,) = owner().call{value: amount}("");
+        require(ok, "rescue transfer failed");
+    }
+
+    // -----------------------------------------------------------------------
+    // Owner — suspension
     // -----------------------------------------------------------------------
 
     function suspendStake(address wallet) external onlyOwner {
@@ -581,9 +674,14 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
     function setCoSigner(address newCoSigner) external onlyOwner {
         require(newCoSigner != address(0), "zero cosigner");
-        require(newCoSigner != owner(), "cosigner must differ from owner");
+        require(newCoSigner != owner(),    "cosigner must differ from owner");
         coSigner = newCoSigner;
         emit CoSignerUpdated(newCoSigner);
+    }
+
+    function transferOwnership(address newOwner) public override onlyOwner {
+        require(newOwner != coSigner, "new owner cannot equal cosigner");
+        super.transferOwnership(newOwner);
     }
 
     function setMaxPoolSize(uint256 newSize) external onlyOwner {
@@ -599,11 +697,19 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     function pause()   external onlyOwner { _pause();   }
     function unpause() external onlyOwner { _unpause(); }
 
-    function emergencyWithdraw() external onlyOwner whenPaused {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "nothing to withdraw");
-        emit EmergencyWithdrawn(balance);
-        (bool ok,) = owner().call{value: balance}("");
+    /**
+     * @notice Emergency withdrawal of pool surplus only.
+     * C1 fix: limited to address(this).balance - totalStaked - totalFailedPayouts.
+     *         Staker principals and pending rescue reserves are always protected.
+     */
+    function emergencyWithdraw() external onlyOwner whenPaused nonReentrant {
+        uint256 reserved = totalStaked + totalFailedPayouts;
+        uint256 surplus  = address(this).balance > reserved
+            ? address(this).balance - reserved
+            : 0;
+        require(surplus > 0, "no surplus to withdraw");
+        emit EmergencyWithdrawn(surplus);
+        (bool ok,) = owner().call{value: surplus}("");
         require(ok, "transfer failed");
     }
 
@@ -626,5 +732,11 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
     function _min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
+    }
+
+    function _tierCap(uint8 tier) internal pure returns (uint256) {
+        if (tier == 1) return (MAX_COVERAGE * 8_000) / 10_000;  // A: 80% = 0.20 ETH
+        if (tier == 2) return (MAX_COVERAGE * 7_000) / 10_000;  // B: 70% = 0.175 ETH
+        return             (MAX_COVERAGE * 5_000) / 10_000;       // C: 50% = 0.125 ETH
     }
 }
