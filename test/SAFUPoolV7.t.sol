@@ -102,7 +102,7 @@ contract SAFUPoolV7Test is Test {
         uint64 deadline = uint64(block.timestamp + 1 hours);
         bytes memory sig = _stakeSig(wallet, tier, deadline, reason);
         vm.prank(wallet);
-        pool.stakeETH{value: STAKE_AMT}(tier, deadline, reason, sig, ben);
+        pool.stakeETH{value: STAKE_AMT}(tier, deadline, reason, sig, ben, true);
     }
 
     function _claimId(address wallet, bytes32 txHash) internal pure returns (bytes32) {
@@ -185,7 +185,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory sig = _stakeSig(staker1, 1, deadline, keccak256("r"));
         vm.prank(staker1);
         vm.expectRevert("approval expired");
-        pool.stakeETH{value: STAKE_AMT}(1, deadline, keccak256("r"), sig, beneficiary);
+        pool.stakeETH{value: STAKE_AMT}(1, deadline, keccak256("r"), sig, beneficiary, true);
     }
 
     function test_stake_revokedApproval() public {
@@ -196,7 +196,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory sig = _stakeSig(staker1, 1, deadline, reason);
         vm.prank(staker1);
         vm.expectRevert("approval revoked");
-        pool.stakeETH{value: STAKE_AMT}(1, deadline, reason, sig, beneficiary);
+        pool.stakeETH{value: STAKE_AMT}(1, deadline, reason, sig, beneficiary, true);
     }
 
     function test_stake_doubleStake() public {
@@ -207,7 +207,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory sig = _stakeSig(staker1, 1, deadline, r2);
         vm.prank(staker1);
         vm.expectRevert("already staked");
-        pool.stakeETH{value: STAKE_AMT}(1, deadline, r2, sig, beneficiary);
+        pool.stakeETH{value: STAKE_AMT}(1, deadline, r2, sig, beneficiary, true);
     }
 
     function test_stake_wrongAmount() public {
@@ -216,7 +216,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory sig = _stakeSig(staker1, 1, deadline, r);
         vm.prank(staker1);
         vm.expectRevert("SAFU: wrong stake amount");
-        pool.stakeETH{value: 0.01 ether}(1, deadline, r, sig, beneficiary);
+        pool.stakeETH{value: 0.01 ether}(1, deadline, r, sig, beneficiary, true);
     }
 
     function test_stake_invalidSig() public {
@@ -230,7 +230,7 @@ contract SAFUPoolV7Test is Test {
         (uint8 v, bytes32 rs, bytes32 s) = vm.sign(STAKER1_PK, eth); // wrong key
         vm.prank(staker1);
         vm.expectRevert("invalid oracle sig");
-        pool.stakeETH{value: STAKE_AMT}(1, deadline, r, abi.encodePacked(rs, s, v), beneficiary);
+        pool.stakeETH{value: STAKE_AMT}(1, deadline, r, abi.encodePacked(rs, s, v), beneficiary, true);
     }
 
     function test_stake_poolEthCapEnforced() public {
@@ -246,7 +246,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory sig = _stakeSig(staker2, 1, deadline, r2);
         vm.prank(staker2);
         vm.expectRevert("pool cap exceeded");
-        pool.stakeETH{value: STAKE_AMT}(1, deadline, r2, sig, beneficiary);
+        pool.stakeETH{value: STAKE_AMT}(1, deadline, r2, sig, beneficiary, true);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -270,7 +270,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory sig2 = _stakeSig(staker1, 1, deadline2, reason);
         vm.prank(staker1);
         vm.expectRevert("approval revoked");
-        pool.stakeETH{value: STAKE_AMT}(1, deadline2, reason, sig2, beneficiary);
+        pool.stakeETH{value: STAKE_AMT}(1, deadline2, reason, sig2, beneficiary, true);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -539,7 +539,7 @@ contract SAFUPoolV7Test is Test {
             uint64 dl = uint64(block.timestamp + 1 hours);
             bytes32 r  = keccak256(abi.encodePacked("extra", i));
             bytes memory sig = _stakeSig(w, 1, dl, r);
-            vm.prank(w); pool.stakeETH{value: STAKE_AMT}(1, dl, r, sig, beneficiary);
+            vm.prank(w); pool.stakeETH{value: STAKE_AMT}(1, dl, r, sig, beneficiary, true);
         }
         _stakeAndReady(staker1, 1, keccak256("r1"), beneficiary);
         _stakeAndReady(staker2, 1, keccak256("r2"), beneficiary);
@@ -572,7 +572,7 @@ contract SAFUPoolV7Test is Test {
             bytes32 r  = keccak256(abi.encodePacked("r", i));
             bytes memory sig = _stakeSig(w, 1, dl, r);
             vm.prank(w);
-            pool.stakeETH{value: STAKE_AMT}(1, dl, r, sig, beneficiary);
+            pool.stakeETH{value: STAKE_AMT}(1, dl, r, sig, beneficiary, true);
         }
         _stakeAndReady(staker1, 1, keccak256("rs1"), beneficiary);
         _stakeAndReady(staker2, 1, keccak256("rs2"), beneficiary);
@@ -870,7 +870,7 @@ contract SAFUPoolV7Test is Test {
         bytes32 r       = keccak256("rr");
         bytes memory sig = _stakeSig(address(rr), 1, deadline, r);
         vm.prank(address(rr));
-        pool.stakeETH{value: STAKE_AMT}(1, deadline, r, sig, beneficiary);
+        pool.stakeETH{value: STAKE_AMT}(1, deadline, r, sig, beneficiary, true);
 
         vm.prank(address(rr));
         // rr tries to withdraw — Curve ETH returned to rr.receive() which reverts
@@ -1219,7 +1219,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory sig = _stakeSig(staker1, 1, deadline, reason);
         vm.prank(staker1);
         vm.expectRevert("approval revoked");
-        pool.stakeETH{value: STAKE_AMT}(1, deadline, reason, sig, beneficiary);
+        pool.stakeETH{value: STAKE_AMT}(1, deadline, reason, sig, beneficiary, true);
     }
 
     function test_setOracle_updates_and_rejects_old_sig() public {
@@ -1232,7 +1232,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory oldSig = _stakeSig(staker1, 1, deadline, reason);
         vm.prank(staker1);
         vm.expectRevert("invalid oracle sig");
-        pool.stakeETH{value: STAKE_AMT}(1, deadline, reason, oldSig, beneficiary);
+        pool.stakeETH{value: STAKE_AMT}(1, deadline, reason, oldSig, beneficiary, true);
     }
 
     function test_setOracle_zero_reverts() public {
@@ -1286,7 +1286,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory sig = _stakeSig(staker1, 1, deadline, reason);
         vm.prank(staker1);
         vm.expectRevert();
-        pool.stakeETH{value: STAKE_AMT}(1, deadline, reason, sig, beneficiary);
+        pool.stakeETH{value: STAKE_AMT}(1, deadline, reason, sig, beneficiary, true);
     }
 
     function test_unpause_allows_stakeETH() public {
@@ -1833,7 +1833,7 @@ contract SAFUPoolV7Test is Test {
         bytes32 r = keccak256("r1");
         bytes memory sig = _stakeSig(staker1, 2, dl, r);
         vm.prank(staker1);
-        pool.stakeETH{value: 0.50 ether}(2, dl, r, sig, beneficiary);
+        pool.stakeETH{value: 0.50 ether}(2, dl, r, sig, beneficiary, true);
         assertEq(pool.stakeOf(staker1).amount, 0.50 ether);
         assertEq(pool.stakeOf(staker1).tier, 2);
     }
@@ -1845,7 +1845,7 @@ contract SAFUPoolV7Test is Test {
         bytes32 r = keccak256("r1");
         bytes memory sig = _stakeSig(staker1, 3, dl, r);
         vm.prank(staker1);
-        pool.stakeETH{value: 0.75 ether}(3, dl, r, sig, beneficiary);
+        pool.stakeETH{value: 0.75 ether}(3, dl, r, sig, beneficiary, true);
         assertEq(pool.stakeOf(staker1).amount, 0.75 ether);
         assertEq(pool.stakeOf(staker1).tier, 3);
     }
@@ -1858,7 +1858,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory sig = _stakeSig(staker1, 1, dl, r);
         vm.prank(staker1);
         vm.expectRevert("SAFU: wrong stake amount");
-        pool.stakeETH{value: 0.24 ether}(1, dl, r, sig, beneficiary); // 1 wei short
+        pool.stakeETH{value: 0.24 ether}(1, dl, r, sig, beneficiary, true); // 1 wei short
     }
 
     // T2.10-5: Tier A — above floor also reverts (exact match required)
@@ -1869,7 +1869,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory sig = _stakeSig(staker1, 1, dl, r);
         vm.prank(staker1);
         vm.expectRevert("SAFU: wrong stake amount");
-        pool.stakeETH{value: 0.26 ether}(1, dl, r, sig, beneficiary); // 1 wei over
+        pool.stakeETH{value: 0.26 ether}(1, dl, r, sig, beneficiary, true); // 1 wei over
     }
 
     // T2.10-6: _tierCap returns exactly 3.75 ETH — verified by revert on 3.75+1 wei
@@ -1889,7 +1889,7 @@ contract SAFUPoolV7Test is Test {
         bytes32 r = keccak256("r1");
         bytes memory sig = _stakeSig(staker1, 3, dl, r);
         vm.prank(staker1);
-        pool.stakeETH{value: 0.75 ether}(3, dl, r, sig, beneficiary);
+        pool.stakeETH{value: 0.75 ether}(3, dl, r, sig, beneficiary, true);
         vm.warp(block.timestamp + 91 days);
         // Old cap 2.5 ETH: 2.5+1 wei would have hit "exceeds tier cap"
         // New cap 3.75 ETH: 2.5+1 wei passes tier cap, hits pool overcommit (only 0.75 ETH staked)
@@ -1923,7 +1923,7 @@ contract SAFUPoolV7Test is Test {
             bytes32 r = keccak256(abi.encodePacked("og", i));
             bytes memory sig = _stakeSig(w, 1, dl, r);
             vm.prank(w);
-            pool.stakeETH{value: STAKE_AMT}(1, dl, r, sig, beneficiary);
+            pool.stakeETH{value: STAKE_AMT}(1, dl, r, sig, beneficiary, true);
         }
         assertEq(pool.totalUniqueStakers(), 50);
 
@@ -1935,7 +1935,7 @@ contract SAFUPoolV7Test is Test {
         bytes memory sig51 = _stakeSig(w51, 1, dl51, r51);
         vm.recordLogs();
         vm.prank(w51);
-        pool.stakeETH{value: STAKE_AMT}(1, dl51, r51, sig51, beneficiary);
+        pool.stakeETH{value: STAKE_AMT}(1, dl51, r51, sig51, beneficiary, true);
 
         // Verify OGStaker event was NOT emitted for the 51st wallet
         Vm.Log[] memory logs = vm.getRecordedLogs();
@@ -1953,6 +1953,43 @@ contract SAFUPoolV7Test is Test {
         assertEq(pool.totalUniqueStakers(), 1);
         _stake(staker2, 1, keccak256("r2"), beneficiary);
         assertEq(pool.totalUniqueStakers(), 2);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // CSO patch 2026-06-13 — M2/M3/M4 key-separation + M1 emergencyExit guard
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // M2: constructor reverts when oracle == coSigner
+    function test_constructor_oracleEqualsCoSigner_reverts() public {
+        vm.expectRevert("oracle must differ from coSigner");
+        new SAFUPool(oracle, oracle, MAX_POOL, treasury);
+    }
+
+    // M3: setOracle reverts when new oracle == coSigner
+    function test_setOracle_equalsCoSigner_reverts() public {
+        vm.expectRevert("oracle must differ from coSigner");
+        pool.setOracle(coSigner);
+    }
+
+    // M4: setCoSigner reverts when new coSigner == oracle
+    function test_setCoSigner_equalsOracle_reverts() public {
+        vm.expectRevert("coSigner must differ from oracle");
+        pool.setCoSigner(oracle);
+    }
+
+    // M1: emergencyExit reverts when staker has an active pending claim
+    function test_emergencyExit_claimActive_pending_reverts() public {
+        // Stake tier A; oracle submits immediately → 0 points < 9,000 → status=5 pending
+        _stake(staker1, 1, keccak256("r1"), beneficiary);
+        vm.prank(oracle);
+        pool.submitClaim(staker1, keccak256("tx1"), ENT_SMALL, block.timestamp);
+        assertTrue(pool.stakeOf(staker1).claimActive, "claimActive must be true");
+        assertFalse(pool.stakeOf(staker1).withdrawn,  "pending path: stake not yet forfeited");
+
+        pool.pause();
+        vm.prank(staker1);
+        vm.expectRevert("SAFU: claim active");
+        pool.emergencyExit();
     }
 }
 

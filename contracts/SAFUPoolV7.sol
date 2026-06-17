@@ -269,8 +269,10 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         uint64         deadline,
         bytes32        reasonHash,
         bytes calldata sig,
-        address        beneficiary
+        address        beneficiary,
+        bool           acknowledgedForfeiture
     ) external payable nonReentrant whenNotPaused {
+        require(acknowledgedForfeiture,                  "SAFU: must acknowledge stake forfeiture risk");
         require(block.timestamp <= deadline,             "approval expired");
         require(!revokedApprovals[reasonHash],           "approval revoked");
         require(tier >= 1 && tier <= 3,                 "invalid tier");
