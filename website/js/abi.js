@@ -1,7 +1,7 @@
 // Minimal ABI — only functions the UI calls (v7)
 window.SAFU_ABI = [
   // Core stake/withdraw
-  "function stakeETH(uint8 tier, uint64 deadline, bytes32 reasonHash, bytes sig, address beneficiary) payable",
+  "function stakeETH(uint8 tier, uint64 deadline, bytes32 reasonHash, bytes sig, address beneficiary, bool acknowledgedForfeiture) payable",
   "function withdraw(address beneficiary)",
   "function emergencyExit()",
 
@@ -21,13 +21,15 @@ window.SAFU_ABI = [
   "function totalStaked() view returns (uint256)",
   "function totalAllocated() view returns (uint256)",
   "function yieldBalance() view returns (uint256)",
-  "function MIN_STAKE() view returns (uint256)",
+  "function STAKE_TIER_A() view returns (uint256)",
+  "function STAKE_TIER_B() view returns (uint256)",
+  "function STAKE_TIER_C() view returns (uint256)",
 
   // Events
   "event Staked(address indexed wallet, uint256 amount, uint8 tier, bytes32 reasonHash)",
   "event Withdrawn(address indexed wallet, uint256 amount)",
-  "event ClaimSubmitted(bytes32 indexed claimId, address indexed wallet, bytes32 txHash, uint256 entitlement)",
-  "event ClaimQueued(bytes32 indexed claimId, address indexed wallet, bytes32 txHash, uint256 entitlement)",
+  "event ClaimSubmitted(bytes32 indexed claimId, address indexed wallet, bytes32 txHash, uint256 entitlement, uint256 hackTimestamp)",
+  "event ClaimQueued(bytes32 indexed claimId, address indexed wallet, bytes32 txHash, uint256 entitlement, uint256 hackTimestamp)",
   "event ClaimUnlocked(bytes32 indexed claimId, address indexed wallet)",
   "event ClaimStreamed(bytes32 indexed claimId, address indexed wallet, uint256 amount, uint256 totalStreamed)",
   "event ClaimCompleted(bytes32 indexed claimId, address indexed wallet)",

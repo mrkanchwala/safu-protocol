@@ -71,13 +71,15 @@ window.SAFU.stake = (() => {
     showStatus('status-stake', 'info', loader('Sending transaction'));
 
     try {
-      const stakeWei = ethers.parseEther(CONFIG.MIN_STAKE_ETH);
+      const tierAmounts = { 1: CONFIG.STAKE_TIER_A_ETH, 2: CONFIG.STAKE_TIER_B_ETH, 3: CONFIG.STAKE_TIER_C_ETH };
+      const stakeWei = ethers.parseEther(tierAmounts[S.enrollData.tier_uint8] || CONFIG.STAKE_TIER_C_ETH);
       const tx = await S.contract.stakeETH(
         S.enrollData.tier_uint8,
         S.enrollData.deadline,
         S.enrollData.reason_hash,
         S.enrollData.signature,
         beneficiary,
+        true,
         { value: stakeWei }
       );
 
