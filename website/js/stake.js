@@ -38,8 +38,10 @@ window.SAFU.stake = (() => {
       const tier = tierNames[S.enrollData.tier_uint8] || S.enrollData.tier;
       const deadline = new Date(S.enrollData.deadline * 1000).toUTCString();
 
+      const stakeAmt = { 1: '0.25', 2: '0.50', 3: '0.75' }[S.enrollData.tier_uint8] || '0.75';
       showStatus('status-enroll', 'ok',
-        `> oracle approval issued\n> tier: ${tier}\n> deadline: ${deadline}`);
+        `> oracle approval issued\n> tier: ${tier}, stake ${stakeAmt} ETH\n> deadline: ${deadline}`);
+      document.getElementById('btn-stake').textContent = `[ stake ${stakeAmt} ETH ]`;
       document.getElementById('btn-stake').disabled = false;
 
     } catch(e) {
@@ -94,7 +96,14 @@ window.SAFU.stake = (() => {
       window.SAFU.init.loadStakeStatus();
 
     } catch(e) {
-      showStatus('status-stake', 'err', `Error: ${e.message}`);
+      let msg = e.message || 'Transaction failed';
+      if (e.code === 'INSUFFICIENT_FUNDS' || msg.includes('insufficient funds'))
+        msg = 'Insufficient ETH — check your balance and try again.';
+      else if (e.code === 'ACTION_REJECTED' || msg.includes('user rejected'))
+        msg = 'Transaction cancelled.';
+      else if (msg.length > 120)
+        msg = msg.slice(0, 120) + '...';
+      showStatus('status-stake', 'err', `Error: ${msg}`);
       document.getElementById('btn-stake').disabled = false;
     }
   }
