@@ -1,0 +1,186 @@
+/* SAFU Whitepaper — extracted from inline style block (CSP fix) */
+
+/* ── Force white on ALL links — overrides browser blue/purple ── */
+.wp-sidebar a,
+.wp-sidebar a:link,
+.wp-sidebar a:visited,
+.wp-main a,
+.wp-main a:link,
+.wp-main a:visited { color: #ffffff !important; text-decoration: none !important; }
+.wp-main a:hover   { color: #ffffff !important; }
+
+/* ── Two-column layout ── */
+.wp-layout {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  min-height: calc(100vh - 62px);
+}
+
+/* ── Sidebar ── */
+.wp-sidebar {
+  position: sticky;
+  top: 62px;
+  height: calc(100vh - 62px);
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  background: var(--panel);
+  padding: 1.5rem 0;
+  align-self: start;
+}
+.wp-sidebar-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  text-transform: uppercase;
+  padding: 0 1.25rem 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+.wp-nav-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 1.25rem;
+  font-family: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: var(--dim);
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+.wp-nav-btn:hover { color: var(--white); border-left-color: var(--border); }
+.wp-nav-btn.active {
+  color: #ffffff;
+  border-left-color: #FF3B3B;
+  background: rgba(255,59,59,0.04);
+}
+.wp-nav-num { display: block; font-size: 0.58rem; color: var(--dim); margin-bottom: 0.1rem; letter-spacing: 0.1em; }
+.wp-nav-btn.active .wp-nav-num { color: rgba(255,255,255,0.5); }
+
+/* ── Main content area ── */
+.wp-main {
+  padding: 4rem 5rem 6rem 4rem;
+  overflow-y: auto;
+}
+
+/* ── Slides ── */
+.wp-slide { display: none; }
+.wp-slide.active { display: block; animation: wSlideIn 0.18s ease; }
+@keyframes wSlideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Cover slide ── */
+.wp-cover h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700; line-height: 1.18;
+  margin-bottom: 2rem;
+}
+.wp-cover h1 .red  { color: #FF3B3B; }
+.wp-cover h1 .cyan { color: #ffffff; }
+.wp-cover-meta {
+  font-size: 0.72rem; color: var(--dim);
+  display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 2rem;
+  padding-top: 2rem; border-top: 1px solid var(--border);
+}
+
+/* ── Section header ── */
+.wp-slide-header { margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+.wp-slide-header .section-label { margin-bottom: 0.5rem; }
+.wp-slide-header h2 { font-size: 1.4rem; font-weight: 700; }
+
+/* ── Body text ── */
+.wp-body { max-width: 680px; }
+.wp-body p {
+  font-size: 0.84rem; color: var(--muted);
+  line-height: 1.9; margin-bottom: 1.4rem;
+}
+.wp-body p strong { color: var(--white); font-weight: 400; }
+
+/* ── Section subheadings ── */
+.wp-body h3 {
+  font-size: 0.68rem; font-weight: 700;
+  color: #ffffff; letter-spacing: 0.12em; text-transform: uppercase;
+  margin: 3rem 0 1rem; padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.wp-body h3:first-child { margin-top: 0; border-top: none; padding-top: 0; }
+
+.wp-body ul { padding-left: 1.25rem; margin-bottom: 1.25rem; }
+.wp-body li { font-size: 0.82rem; color: var(--muted); padding: 0.35rem 0; line-height: 1.8; }
+.wp-body li strong { color: #ffffff; font-weight: 400; }
+
+/* ── Callouts ── */
+.wp-callout {
+  border-left: 2px solid var(--border);
+  padding: 1rem 1.5rem; background: rgba(255,255,255,0.02);
+  margin: 1.5rem 0;
+}
+.wp-callout p { color: var(--white) !important; margin: 0 !important; }
+.wp-callout-red { border-left-color: #FF3B3B; background: rgba(255,59,59,0.03); }
+.wp-callout-red p { color: var(--muted) !important; }
+
+/* ── Tables ── */
+.wp-table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+.wp-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.wp-table th {
+  text-align: left; padding: 0.6rem 0.85rem;
+  font-size: 0.63rem; letter-spacing: 0.1em; color: #ffffff;
+  border-bottom: 1px solid var(--border); background: var(--panel);
+}
+.wp-table td {
+  padding: 0.65rem 0.85rem; color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem; line-height: 1.65; vertical-align: top;
+}
+.wp-table td strong { color: var(--white); font-weight: 400; }
+.wp-table tr:last-child td { border-bottom: none; }
+
+/* ── Contract address ── */
+.wp-addr {
+  font-size: 0.72rem; color: var(--dim);
+  background: var(--panel); border: 1px solid var(--border);
+  padding: 0.6rem 0.85rem; display: inline-block;
+  margin: 0.5rem 0 1.25rem; word-break: break-all;
+}
+
+/* ── Stat grid ── */
+.wp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 2rem 0; }
+.wp-stat { border: 1px solid var(--border); padding: 1.25rem; background: var(--panel); }
+.wp-stat-val { font-size: 1.5rem; font-weight: 700; color: #FF3B3B; }
+.wp-stat-lbl { font-size: 0.62rem; color: var(--dim); letter-spacing: 0.12em; margin-top: 0.35rem; }
+
+/* ── Feature / revenue cards ── */
+.wp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin: 1.5rem 0; }
+.wp-card { border: 1px solid var(--border); padding: 1.5rem; background: var(--panel); }
+.wp-card-title { font-size: 0.72rem; font-weight: 700; color: #ffffff; margin-bottom: 0.75rem; letter-spacing: 0.04em; }
+.wp-card-body { font-size: 0.78rem; color: var(--muted); line-height: 1.75; }
+.wp-card-status { font-size: 0.65rem; color: var(--dim); margin-top: 0.85rem; }
+.wp-card-status.live { color: #28c940; }
+
+/* ── Check list ── */
+.check-list { list-style: none !important; padding: 0 !important; margin: 1rem 0; }
+.check-list li { font-size: 0.8rem; color: var(--muted); padding: 0.7rem 0; border-bottom: 1px solid var(--border); line-height: 1.7; }
+.check-list li::before { content: '✓ '; color: #28c940; }
+.check-list li:last-child { border-bottom: none; }
+.wp-verdict { font-size: 0.75rem; color: #28c940; margin: 1rem 0 1.5rem; }
+
+/* ── Steps ── */
+.step { margin-bottom: 2.25rem; }
+.step:last-child { margin-bottom: 0; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .wp-layout { grid-template-columns: 1fr; }
+  .wp-sidebar {
+    position: relative; top: 0; height: auto;
+    display: flex; flex-wrap: nowrap; overflow-x: auto;
+    padding: 0; border-right: none; border-bottom: 1px solid var(--border);
+  }
+  .wp-sidebar-label { display: none; }
+  .wp-nav-btn { white-space: nowrap; border-left: none; border-bottom: 2px solid transparent; padding: 0.85rem 1rem; }
+  .wp-nav-btn.active { border-bottom-color: #FF3B3B; border-left-color: transparent; }
+  .wp-main { padding: 2rem 1.5rem 4rem; }
+}

@@ -7,6 +7,6 @@ window.CONFIG = {
   SAFU_API_BASE:            'https://safustaking.com/api',
   RPC_URL:                  'https://safustaking.com/api/v1/rpc',
   WALLETCONNECT_PROJECT_ID: '3824772bb6c01d55a924dac308a3cb3e',
-  MIN_STAKE_ETH:            '0.015',
+  MIN_STAKE_ETH:            '0.05',
   CHAIN_ID:                 1,
 };

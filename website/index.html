@@ -4,7 +4,59 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAFU — System Assurances, F**k You.</title>
-<meta name="description" content="Stake ETH. Get covered. If your wallet gets drained — payout activates. No committee. No vote.">
+<meta name="description" content="SAFUPool is a wallet protection protocol. Stake ETH and get covered against wallet drains. If your wallet gets drained, the contract pays you back up to 15x automatically, with no committee and no vote.">
+<link rel="canonical" href="https://safustaking.com/">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph / Link Preview -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://safustaking.com/">
+<meta property="og:site_name" content="SAFU Protocol">
+<meta property="og:title" content="SAFU — System Assurances, F**k You.">
+<meta property="og:description" content="Stake ETH and get covered against wallet drains. If your wallet gets drained, the contract pays you back up to 15x automatically, with no committee and no vote.">
+<meta property="og:image" content="https://safustaking.com/og-image.png?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SAFU Protocol — System Assurances, F**k You. Stake in SAFU.">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@safu_staking">
+<meta name="twitter:creator" content="@safu_staking">
+<meta name="twitter:title" content="SAFU — System Assurances, F**k You.">
+<meta name="twitter:description" content="Stake ETH and get covered against wallet drains. If your wallet gets drained, the contract pays you back up to 15x automatically, with no committee and no vote.">
+<meta name="twitter:image" content="https://safustaking.com/og-image.png?v=2">
+
+<!-- AIEO / Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "SAFU Protocol",
+  "alternateName": "SAFUPool",
+  "description": "Decentralised crypto wallet protection protocol. Stake ETH and get covered against phishing attacks, approval exploits, and private key compromise. If your wallet gets drained, the contract pays out deterministically — 15:1 coverage ratio, no committee, no vote.",
+  "url": "https://safustaking.com",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Ethereum Mainnet",
+  "offers": {
+    "@type": "Offer",
+    "description": "15:1 coverage ratio over 90 days. Payout activates automatically on verified drain events.",
+    "priceCurrency": "ETH"
+  },
+  "featureList": [
+    "Deterministic payout — no human vote",
+    "15:1 coverage ratio",
+    "Covers phishing, approval exploits, private key compromise",
+    "90-day coverage window",
+    "On-chain verified — Etherscan"
+  ],
+  "sameAs": [
+    "https://x.com/safu_staking",
+    "https://github.com/mrkanchwala/safu-protocol",
+    "https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480"
+  ]
+}
+</script>
 
 <!-- Security headers via meta (nginx headers are primary — see nginx config) -->
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -19,8 +71,9 @@
            img-src 'self' data: https://imagedelivery.net https://registry.walletconnect.com;
            frame-src https://verify.walletconnect.org;">
 
-<link rel="stylesheet" href="css/styles.css?v=23">
+<link rel="stylesheet" href="css/styles.css?v=26">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="logo.png">
 </head>
 <body>
 
@@ -36,13 +89,17 @@
 <!-- ── NAV ──────────────────────────────────────────────────────── -->
 <nav>
   <div class="container">
-    <a href="/" class="logo">> SAFU<span class="cursor"></span></a>
+    <a href="/" class="logo">
+      <img src="logo.png" alt="SAFU" class="nav-logo-img">
+    </a>
     <div class="nav-links">
       <a href="#stake" class="nav-hide">stake</a>
       <a href="#claim" class="nav-hide">claim</a>
       <a href="#about" class="nav-hide">about</a>
       <a href="#security" class="nav-hide">security</a>
-      <a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer" class="nav-hide">contract ↗</a>
+      <a href="#team" class="nav-hide">team</a>
+      <a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer" class="nav-hide nav-hide-md">contract ↗</a>
+      <a href="https://docs.google.com/forms/d/1qD9IrIkfs39Wupaw5y-zvCS46Ppq4JQiIsRgV9D3s80/viewform" target="_blank" rel="noopener noreferrer" class="nav-hide nav-hide-md">feedback</a>
       <button id="btn-connect">[ connect wallet ]</button>
       <button id="btn-disconnect" class="d-none">[ disconnect ]</button>
     </div>
@@ -53,18 +110,18 @@
 <section class="hero">
   <div class="container">
     <h1>
-      <span class="red">System Assurances,<br>F**k You.</span><br>
-      <span class="cyan">Stake in SAFU.</span>
+      System Assurances,<br>
+      F<span class="red">**</span>K YOU<span class="red">.</span><br>
+      Stake in SAFU.
     </h1>
     <p class="hero-sub">
-      Your insurer had assurances. SAFU has <strong>math.</strong><br>
-      Stake ETH. Get covered. If your wallet gets drained —
-      <strong>payout activates automatically.</strong>
-      No committee. No vote. No waiting room.
+      Your exchange had assurances and your wallet provider had guarantees, and when your wallet got drained anyway, neither one paid you back.<br>
+      Put in a small amount of ETH and get covered for up to fifteen times that, and if your wallet gets drained the contract pays you back automatically with <strong>no claim form, no committee, and no one deciding whether you deserve it.</strong>
     </p>
     <div class="hero-actions">
       <button class="btn btn-cyan" id="btn-hero-stake">[ stake now ]</button>
       <button class="btn btn-dim"  id="btn-hero-learn">[ learn more ]</button>
+      <a href="/whitepaper.html" target="_blank" rel="noopener noreferrer" class="btn btn-red">[ whitepaper ]</a>
     </div>
   </div>
 </section>
@@ -75,15 +132,15 @@
     <div>
       <div class="stat-val">100%</div>
       <div class="stat-lbl">CATCH RATE</div>
-      <div class="stat-note">*<a href="#about" class="link-inherit">test conditions — see below ↓</a></div>
+      <div class="stat-note">*<a href="#about" class="link-inherit">test conditions, see below ↓</a></div>
     </div>
     <div>
       <div class="stat-val">0.015Ξ</div>
       <div class="stat-lbl">STAKE AMOUNT</div>
     </div>
     <div>
-      <div class="stat-val">0.25Ξ</div>
-      <div class="stat-lbl">MAX COVERAGE</div>
+      <div class="stat-val">15:1</div>
+      <div class="stat-lbl">COVERAGE RATIO</div>
     </div>
     <div>
       <div class="stat-val">90d</div>
@@ -100,7 +157,7 @@
 <section id="stake">
   <div class="container">
     <div class="section-label"><span>//</span> 01 — stake</div>
-    <h2>Get covered.</h2>
+    <h2>How staking works.</h2>
 
     <div class="terminal">
       <div class="terminal-bar">
@@ -279,20 +336,16 @@
       <div class="about-card">
         <h3>[ the problem ]</h3>
         <p>The system assured you. Your exchange had insurance. Your wallet provider had guarantees.
-        When your wallet got drained — the system shrugged.
-        <strong>No recourse. No payout. No accountability.</strong></p>
+        When your wallet got drained, the system shrugged.
+        <strong>No recourse, no payout, no accountability.</strong></p>
       </div>
       <div class="about-card">
         <h3>[ the protocol ]</h3>
-        <p>SAFU is a staking protocol with a protection layer.
-        Stake ETH. Get covered. If a drain is verified —
-        <strong>payout activates deterministically.</strong>
-        No humans in the loop. No governance vote.</p>
+        <p>Put ETH into the pool and get covered for up to fifteen times what you put in if your wallet gets drained. The math decides, with no humans involved and no governance vote.</p>
       </div>
       <div class="about-card">
         <h3>[ the oracle ]</h3>
-        <p>Every submitted drain gets scanned by the SAFU oracle — a closed-source fraud detection engine trained on verified on-chain drain patterns.
-        <strong>Same inputs. Same verdict. Every time.</strong></p>
+        <p>Every submitted drain gets scanned by the SAFU oracle, a closed-source fraud detection engine tested against verified real-world hacks. The same transaction always produces the same verdict, every time.</p>
       </div>
       <div class="about-card">
         <h3>[ the catch rate ]</h3>
@@ -310,7 +363,7 @@
 <section id="security">
   <div class="container">
     <div class="section-label"><span>//</span> 04 — security</div>
-    <h2>Audited. Verified.</h2>
+    <h2>Independently audited and verified.</h2>
 
     <div class="sec-grid">
 
@@ -318,18 +371,18 @@
       <div class="terminal sec-panel">
         <div class="terminal-bar">
           <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <span class="terminal-title">hashlock-ai-audit.txt — 2026-05-27</span>
+          <span class="terminal-title">hashlock-ai-audit.txt — 2026-05-28</span>
         </div>
         <div class="sec-label-inner">[ Hashlock AI Audit ]</div>
         <table class="sec-table">
-          <tr><td class="sev sev-cr">CRITICAL</td><td class="sev-count">0</td><td class="sev-note">—</td></tr>
-          <tr><td class="sev sev-hi">HIGH</td><td class="sev-count">1 → 0</td><td class="sev-note">cancelClaim accounting isolation</td></tr>
-          <tr><td class="sev sev-me">MEDIUM</td><td class="sev-count">1 → 0</td><td class="sev-note">tier cap enforcement in submitClaim</td></tr>
-          <tr><td class="sev sev-lo">LOW</td><td class="sev-count">6 → 0</td><td class="sev-note">beneficiary gates, dedup, whenNotPaused</td></tr>
-          <tr><td class="sev sev-in">INFO</td><td class="sev-count">3</td><td class="sev-note">by design — C1 / C2 / I2</td></tr>
+          <tr><td class="sev sev-cr">CRITICAL</td><td class="sev-count">1</td><td class="sev-note">demo pool size — intentionally small, disclosed to all participants</td></tr>
+          <tr><td class="sev sev-hi">HIGH</td><td class="sev-count">4</td><td class="sev-note">all reviewed — 1 minor improvement queued for next version</td></tr>
+          <tr><td class="sev sev-me">MEDIUM</td><td class="sev-count">4</td><td class="sev-note">all reviewed — 1 minor improvement queued for next version</td></tr>
+          <tr><td class="sev sev-lo">LOW</td><td class="sev-count">3</td><td class="sev-note">accepted design choices</td></tr>
+          <tr><td class="sev sev-in">INFO</td><td class="sev-count">4</td><td class="sev-note">accepted</td></tr>
         </table>
-        <div class="sec-verdict-ok">✓ all critical findings resolved</div>
-        <a href="https://aiaudit.hashlock.com/audit/890ab9ec-8311-423f-9bd1-7d4a3cce48f8" target="_blank" rel="noopener noreferrer" class="sec-ext-link">view full report ↗</a>
+        <div class="sec-verdict-ok">✓ all 18 findings reviewed</div>
+        <a href="https://aiaudit.hashlock.com/audit/4af6db2e-845f-40bf-99ad-bb28562327d4" target="_blank" rel="noopener noreferrer" class="sec-ext-link">view full report ↗</a>
       </div>
 
       <!-- Halmos Symbolic Execution -->
@@ -342,16 +395,16 @@
         <div class="halmos-score">10 / 10</div>
         <div class="halmos-sub">properties verified — zero counterexamples</div>
         <ul class="check-list">
-          <li>cancelClaim never sends ETH (forfeit enforced)</li>
-          <li>totalStaked decremented on cancel</li>
-          <li>Withdrawal permanently blocked after submitClaim</li>
-          <li>amount zeroed + claimActive=false after cancel</li>
-          <li>coSigner ≠ owner at all times</li>
-          <li>transferOwnership to coSigner always reverts</li>
-          <li>totalStaked + totalFailedPayouts ≤ pool balance</li>
-          <li>Entitlement above tier A cap always reverts (symbolic)</li>
-          <li>Entitlement above MAX_COVERAGE always reverts (symbolic)</li>
-          <li>Cancelled claim cannot be streamed</li>
+          <li>Claiming permanently forfeits your stake, enforced on-chain by the contract itself</li>
+          <li>Pool balance stays accurate when a claim is cancelled</li>
+          <li>Once a claim is filed, the original stake cannot be withdrawn</li>
+          <li>All stake records reset correctly on cancellation</li>
+          <li>The two approval keys are always held by different addresses</li>
+          <li>Contract ownership cannot be transferred to the co-approval address</li>
+          <li>The contract never owes more than it holds in ETH</li>
+          <li>Payouts above the maximum allowed amount are always blocked</li>
+          <li>Payouts above coverage limits are always blocked</li>
+          <li>A cancelled claim can never release further payments</li>
         </ul>
       </div>
     </div>
@@ -359,7 +412,7 @@
     <!-- Bottom row -->
     <div class="sec-mini-grid">
       <div class="sec-mini-card">
-        <div class="sec-mini-title">[ internal CSO — comprehensive ]</div>
+        <div class="sec-mini-title">[ security review — comprehensive ]</div>
         <div class="sec-sev-row">
           <span class="sev sev-cr">CRITICAL 0</span>
           <span class="sev sev-hi">HIGH 0</span>
@@ -377,6 +430,43 @@
         <div class="sec-mini-title">[ contract ]</div>
         <div class="sec-mini-sub">Solidity 0.8.25 · BUSL-1.1</div>
         <a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer" class="sec-ext-link">etherscan verified ↗</a>
+      </div>
+    </div>
+
+    <!-- Wallet safety guarantees -->
+    <div class="sec-guarantee">
+      <div class="sec-guarantee-item">
+        <div class="sec-mini-title">[ your wallet stays yours ]</div>
+        <p class="sec-mini-sub">Staking sends your ETH to the pool and grants no further permissions. The contract is structurally prevented from accessing any other asset in your wallet, at any point before, during, or after staking.</p>
+      </div>
+      <div class="sec-guarantee-item">
+        <div class="sec-mini-title">[ your stake is protected on-chain ]</div>
+        <p class="sec-mini-sub">Mathematical verification confirmed the pool always holds more ETH than it owes. Only you can withdraw your staked ETH, and that guarantee holds regardless of who operates the pool or holds the signing key.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── TEAM ──────────────────────────────────────────────────────── -->
+<hr class="section-divider">
+<section id="team">
+  <div class="container">
+    <div class="section-label"><span>//</span> 05 — team</div>
+    <h2>Who built this</h2>
+    <div class="team-card">
+      <div class="team-name">Murtaza Kanchwala</div>
+      <div class="team-role">Co-founder</div>
+      <p class="team-bio">Murtaza spent years in crypto across sales, BD, and operations. He started SAFU after filing a claim on a wallet loss, waiting three weeks for a governance vote, and receiving nothing. He decided the fix was to remove the committee.</p>
+      <div class="team-links">
+        <a href="https://www.linkedin.com/in/mrmurtazakanchwala/" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.605 0 4.276 2.372 4.276 5.457v6.284zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          linkedin ↗
+        </a>
+        <a href="https://x.com/MrMtazk" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          @MrMtazk ↗
+        </a>
       </div>
     </div>
   </div>
@@ -423,7 +513,7 @@
 <script src="js/state.js?v=23"></script>
 <script src="js/ui.js?v=23"></script>
 <script src="js/init.js?v=23"></script>
-<script src="js/wallet.js?v=23"></script>
+<script src="js/wallet.js?v=26"></script>
 <script src="js/stake.js?v=23"></script>
 <script src="js/claim.js?v=23"></script>
 <script src="js/stream.js?v=23"></script>

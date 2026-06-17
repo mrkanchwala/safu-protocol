@@ -33,8 +33,11 @@ window.SAFU.init = (() => {
       if (stake.amount > 0n && !stake.withdrawn) {
         const tierMap = { 1: 'A', 2: 'B', 3: 'C' };
         const tier    = tierMap[stake.tier] || stake.tier;
-        const unlock  = new Date(Number(stake.unlocksAt) * 1000).toLocaleDateString();
         const isOG    = Number(everStaked) <= 50;
+        const daysSinceStake = Math.floor((Date.now() / 1000 - Number(stake.stakedAt)) / 86400);
+        const penaltyLocked  = stake.penaltyLockedUntil > 0n
+          ? `<br>> penalty lock until: ${new Date(Number(stake.penaltyLockedUntil) * 1000).toLocaleDateString()}`
+          : '';
 
         const box = document.getElementById('active-stake-box');
         const content = document.getElementById('active-stake-content');
@@ -43,9 +46,10 @@ window.SAFU.init = (() => {
             `> active stake found<br>` +
             `> tier: ${tier} &nbsp;|&nbsp; amount: ${ethers.formatEther(stake.amount)} ETH<br>` +
             `> beneficiary: ${localStorage.getItem('safu_bene_' + S.walletAddress.toLowerCase()) || '[protected]'}<br>` +
-            `> unlocks: ${unlock}<br>` +
-            `> points: ${isOG ? '<span style="color:var(--cyan)">[ OG STAKER ]</span>' : '—'}<br>` +
-            `> claim active: ${stake.claimActive ? '<span style="color:var(--red)">YES</span>' : 'no'}`;
+            `> days staked: ${daysSinceStake}` +
+            (isOG ? ' &nbsp;<span style="color:var(--cyan)">[ OG STAKER ]</span>' : '') +
+            penaltyLocked +
+            `<br>> claim active: ${stake.claimActive ? '<span style="color:var(--red)">YES</span>' : 'no'}`;
           box.style.removeProperty('display');
           box.style.display = 'block';
         }

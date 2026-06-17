@@ -58,7 +58,12 @@ window.SAFU.wallet = (() => {
     _closeModal();
     try {
       const p = new ethers.BrowserProvider(detail.provider);
-      await p.send('eth_requestAccounts', []);
+      try {
+        await p.send('wallet_requestPermissions', [{ eth_accounts: {} }]);
+      } catch(pe) {
+        if (pe.code === 4001) throw pe;
+        await p.send('eth_requestAccounts', []);
+      }
       await _finalize(p);
     } catch(e) {
       showStatus('status-wallet', 'err', `Connection failed: ${e.message}`);
@@ -69,7 +74,12 @@ window.SAFU.wallet = (() => {
     _closeModal();
     try {
       const p = new ethers.BrowserProvider(eth);
-      await p.send('eth_requestAccounts', []);
+      try {
+        await p.send('wallet_requestPermissions', [{ eth_accounts: {} }]);
+      } catch(pe) {
+        if (pe.code === 4001) throw pe;
+        await p.send('eth_requestAccounts', []);
+      }
       await _finalize(p);
     } catch(e) {
       showStatus('status-wallet', 'err', `Connection failed: ${e.message}`);
@@ -171,8 +181,14 @@ window.SAFU.wallet = (() => {
   async function _finalize(p) {
     const network = await p.getNetwork();
     if (Number(network.chainId) !== CONFIG.CHAIN_ID) {
-      showStatus('status-wallet', 'err', 'Wrong network — switch to Ethereum Mainnet.');
-      return;
+      try {
+        await p.send('wallet_switchEthereumChain', [{ chainId: '0x1' }]);
+        const switched = await p.getNetwork();
+        if (Number(switched.chainId) !== CONFIG.CHAIN_ID) throw new Error('switch failed');
+      } catch(e) {
+        showStatus('status-wallet', 'err', 'Wrong network — switch to Ethereum Mainnet.');
+        return;
+      }
     }
     S.provider      = p;
     S.signer        = await p.getSigner();

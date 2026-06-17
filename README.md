@@ -78,7 +78,7 @@ Points accrue from `stakedAt`. Rate increases with commitment:
 | `contracts/SAFUPoolV7.sol` | On-chain pool — staking, yield integration, payout stream, tier enforcement, points system |
 | `script/Deploy.s.sol` | Foundry deploy script — atomically deploys with oracle, coSigner, maxPool, treasury args |
 | `foundry.toml` | Compiler settings for reproducible builds |
-| `test/SAFUPoolV7Test.t.sol` | 157-test Foundry suite |
+| `test/SAFUPoolV7.t.sol` | 161-test Foundry suite |
 | `test/SAFUPoolV7Halmos.t.sol` | Symbolic execution — 12 properties, zero counterexamples |
 
 The oracle scoring engine is off-chain and closed source. What's on-chain is the payout execution — auditable, deterministic, immutable.
@@ -89,12 +89,17 @@ The oracle scoring engine is off-chain and closed source. What's on-chain is the
 
 | Check | Result |
 |-------|--------|
-| Internal CSO audit | PASS — 0 CRITICAL / 0 HIGH / 0 MEDIUM |
+| Internal CSO audit (2026-06-13) | PASS — 0 CRITICAL / 0 HIGH / 4 MEDIUM fixed / 2 LOW fixed |
 | Halmos symbolic execution | 12/12 properties — zero counterexamples |
-| Foundry test suite | 194/194 PASS |
+| Foundry test suite | 161/161 PASS |
 | Hashlock AI audit | Pending (v7) |
 
 Previous Hashlock v6 report: https://aiaudit.hashlock.com/audit/890ab9ec-8311-423f-9bd1-7d4a3cce48f8
+
+**v7 CSO fixes (2026-06-13):**
+- `emergencyExit` now blocked when staker has an active or pending claim — prevents `totalAllocated` griefing during pause
+- Oracle and coSigner must be different keys — enforced at constructor, `setOracle`, and `setCoSigner`
+- `withdraw()` NatSpec corrected — v7 has no lock period
 
 ---
 
@@ -112,7 +117,7 @@ Previous Hashlock v6 report: https://aiaudit.hashlock.com/audit/890ab9ec-8311-42
 - **Stake forfeiture on claim (by design).** When `submitClaim` runs, the staker's principal is permanently forfeited regardless of claim outcome. A false-positive `cancelClaim` does not return the stake — forfeiture is the penalty, not a bug. Principal is restored to pool accounting; the 365-day withdrawal lock is the actual consequence.
 - **Oracle trust model.** The G9 enrollment cap (ensuring coverage_committed ≤ pool_TVL) is enforced oracle-side only. The contract has no on-chain guard for enrollment volume — the oracle is founder-controlled. This is an intentional design choice at current TVL. Disclosed here and in NatSpec.
 - **Pending claim window.** The 30-day claim window applies at `submitClaim` time only. A pending claim (status 5) logged within the window can be activated by `unlockPendingClaim` after the window expires — the oracle's on-chain verification at submit time is the authoritative gate.
-- **2-of-2 coSigner.** `coSigner != owner` is enforced at constructor and `setCoSigner`. `transferOwnership` also enforces `newOwner != coSigner`. Both keys are required for `approveOverride` execution.
+- **2-of-2 coSigner.** `coSigner != owner` and `coSigner != oracle` are enforced at constructor and `setCoSigner`. `oracle != coSigner` is also enforced at `setOracle`. `transferOwnership` enforces `newOwner != coSigner`. Both keys are required for `approveOverride` execution.
 
 ---
 

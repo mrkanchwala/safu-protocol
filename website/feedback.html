@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAFU — Feedback</title>
+<meta name="description" content="Share a suggestion, report an issue, or get in touch with the SAFU team.">
+
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'self';
+           script-src 'self' https://fonts.googleapis.com;
+           style-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;
+           font-src https://fonts.gstatic.com;
+           connect-src 'self';
+           img-src 'self' data:;
+           frame-src https://docs.google.com;">
+
+<link rel="stylesheet" href="css/styles.css?v=25">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+<style>
+  a { text-decoration: none; }
+  a:hover { color: var(--white); }
+
+  .fb-wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 4rem 2rem 8rem;
+  }
+
+  .fb-header {
+    padding: 4rem 0 3rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3.5rem;
+  }
+  .fb-header h1 {
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 700; line-height: 1.2; margin-bottom: 1rem;
+  }
+  .fb-header h1 .red  { color: var(--red);  text-shadow: 0 0 18px rgba(255,0,51,0.4); }
+  .fb-header h1 .cyan { color: var(--cyan); text-shadow: 0 0 18px rgba(0,255,255,0.4); }
+  .fb-header p { font-size: 0.84rem; color: var(--muted); line-height: 1.8; max-width: 520px; margin-top: 0.75rem; }
+
+  /* Three info cards above the form */
+  .fb-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 3rem;
+  }
+  .fb-card { border: 1px solid var(--border); padding: 1.5rem; background: var(--panel); }
+  .fb-card-label { font-size: 0.65rem; letter-spacing: 0.12em; color: var(--cyan); text-transform: uppercase; margin-bottom: 0.5rem; }
+  .fb-card-text { font-size: 0.78rem; color: var(--muted); line-height: 1.7; }
+
+  /* Form container */
+  .fb-form-wrap {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    overflow: hidden;
+  }
+  .fb-form-bar {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  .fb-form-bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .fb-form-bar .dot-r { background: #ff3b30; }
+  .fb-form-bar .dot-y { background: #ffcc00; }
+  .fb-form-bar .dot-g { background: #28c940; }
+  .fb-form-bar span { margin-left: 0.5rem; font-size: 0.75rem; color: var(--dim); letter-spacing: 0.06em; }
+
+  .fb-form-body {
+    padding: 0;
+    /* Google Forms iframe lives here — white bg is intentional contrast */
+  }
+  .fb-form-body iframe {
+    display: block;
+    width: 100%;
+    border: none;
+    min-height: 780px;
+    background: #fff;
+  }
+
+  /* Footer */
+  .fb-footer {
+    margin-top: 4rem; padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.7rem; color: var(--dim); line-height: 2;
+  }
+  .fb-footer a { color: var(--dim); }
+  .fb-footer a:hover { color: var(--cyan); }
+
+  @media (max-width: 600px) {
+    .fb-wrap { padding: 2rem 1.25rem 5rem; }
+    .fb-form-body iframe { min-height: 1000px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="container">
+    <a href="/" class="logo">> SAFU<span class="cursor"></span></a>
+    <div class="nav-links">
+      <a href="/" class="nav-hide">back to safustaking.com</a>
+      <a href="/#stake" class="nav-hide">stake</a>
+      <a href="/whitepaper.html" class="nav-hide">whitepaper</a>
+    </div>
+  </div>
+</nav>
+
+<div class="fb-wrap">
+
+  <!-- HEADER -->
+  <div class="fb-header">
+    <div class="section-label">// feedback</div>
+    <h1>
+      <span class="red">Seen something?</span><br>
+      <span class="cyan">Say something.</span>
+    </h1>
+    <p>Drop a suggestion, flag a bug, or introduce yourself. No account needed. No spam filter to fight through. We read every submission.</p>
+  </div>
+
+  <!-- CONTEXT CARDS -->
+  <div class="fb-cards">
+    <div class="fb-card">
+      <div class="fb-card-label">[ what to include ]</div>
+      <div class="fb-card-text">Your Telegram handle and the project you're associated with. One clear suggestion or question. That's it.</div>
+    </div>
+    <div class="fb-card">
+      <div class="fb-card-label">[ what we do with it ]</div>
+      <div class="fb-card-text">Product feedback goes straight to the roadmap review. Bug reports get triaged within 24 hours. Partnership enquiries get a reply on Telegram.</div>
+    </div>
+    <div class="fb-card">
+      <div class="fb-card-label">[ prefer direct? ]</div>
+      <div class="fb-card-text">Reach the team on Telegram: <a href="https://t.me/mrkanchwala" target="_blank" rel="noopener noreferrer" style="color: var(--cyan);">@mrkanchwala ↗</a></div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="fb-form-wrap">
+    <div class="fb-form-bar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span>[ safu — feedback form ]</span>
+    </div>
+    <div class="fb-form-body">
+      <iframe
+        src="https://docs.google.com/forms/d/1qD9IrIkfs39Wupaw5y-zvCS46Ppq4JQiIsRgV9D3s80/viewform?embedded=true"
+        title="SAFU feedback form"
+        loading="lazy">
+        Loading form...
+      </iframe>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="fb-footer">
+    <p>SAFU — System Assurances, F**k You.<br>
+    <a href="/">safustaking.com</a> · <a href="/whitepaper.html">whitepaper</a> · <a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer">Etherscan ↗</a></p>
+  </div>
+
+</div>
+</body>
+</html>

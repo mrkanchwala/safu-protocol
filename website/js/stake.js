@@ -86,7 +86,7 @@ window.SAFU.stake = (() => {
 
       const receipt = await tx.wait();
       showStatus('status-stake', 'ok',
-        `> staked ✓\n> tx: ${tx.hash}\n> block: ${receipt.blockNumber}\n> coverage active — 90 days`);
+        `> staked ✓\n> tx: ${tx.hash}\n> block: ${receipt.blockNumber}\n> coverage active — withdraw anytime`);
 
       localStorage.setItem('safu_bene_' + S.walletAddress.toLowerCase(), beneficiary);
       window.SAFU.init.loadStakeStatus();

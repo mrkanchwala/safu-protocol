@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAFU — Whitepaper v0.1</title>
+<meta name="description" content="SAFU Whitepaper — Deterministic wallet coverage for the onchain economy.">
+<link rel="canonical" href="https://safustaking.com/whitepaper.html">
+
+<!-- Open Graph / Link Preview -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://safustaking.com/whitepaper.html">
+<meta property="og:site_name" content="SAFU Protocol">
+<meta property="og:title" content="SAFU Whitepaper — System Assurances, F**k You.">
+<meta property="og:description" content="Deterministic wallet coverage for the onchain economy. Community-owned protection pool, automated payout, no committee, no vote.">
+<meta property="og:image" content="https://safustaking.com/og-image.png?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SAFU Protocol — System Assurances, F**k You. Stake in SAFU.">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@safu_staking">
+<meta name="twitter:creator" content="@safu_staking">
+<meta name="twitter:title" content="SAFU Whitepaper — System Assurances, F**k You.">
+<meta name="twitter:description" content="Deterministic wallet coverage for the onchain economy. Community-owned protection pool, automated payout, no committee, no vote.">
+<meta name="twitter:image" content="https://safustaking.com/og-image.png?v=2">
+
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+
+<link rel="stylesheet" href="css/styles.css?v=26">
+<link rel="stylesheet" href="css/whitepaper.css?v=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="container">
+    <a href="/" class="logo"><img src="logo.png" alt="SAFU" class="nav-logo-img"></a>
+    <div class="nav-links">
+      <a href="/" class="nav-hide">safustaking.com</a>
+      <a href="/#stake" class="nav-hide">stake</a>
+      <a href="/#security" class="nav-hide">security</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── TWO-COLUMN LAYOUT ── -->
+<div class="wp-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="wp-sidebar">
+    <div class="wp-sidebar-label">// whitepaper v0.1</div>
+    <button class="wp-nav-btn" data-target="cover">
+      <span class="wp-nav-num">// cover</span>
+      SAFU
+    </button>
+    <button class="wp-nav-btn" data-target="abstract">
+      <span class="wp-nav-num">// 01</span>
+      Abstract
+    </button>
+    <button class="wp-nav-btn" data-target="problem">
+      <span class="wp-nav-num">// 02</span>
+      The Problem
+    </button>
+    <button class="wp-nav-btn" data-target="what">
+      <span class="wp-nav-num">// 03</span>
+      What SAFU Is
+    </button>
+    <button class="wp-nav-btn" data-target="mechanics">
+      <span class="wp-nav-num">// 04</span>
+      How It Works
+    </button>
+    <button class="wp-nav-btn" data-target="security">
+      <span class="wp-nav-num">// 05</span>
+      Security
+    </button>
+    <button class="wp-nav-btn" data-target="economics">
+      <span class="wp-nav-num">// 06</span>
+      Economic Model
+    </button>
+    <button class="wp-nav-btn" data-target="token">
+      <span class="wp-nav-num">// 07</span>
+      Points &amp; Token
+    </button>
+    <button class="wp-nav-btn" data-target="roadmap">
+      <span class="wp-nav-num">// 08</span>
+      Roadmap
+    </button>
+    <button class="wp-nav-btn" data-target="legal">
+      <span class="wp-nav-num">// 09</span>
+      Legal
+    </button>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="wp-main">
+
+    <!-- COVER -->
+    <div class="wp-slide" id="cover">
+      <div class="wp-cover">
+        <div class="section-label">// whitepaper — v0.1 — May 2026</div>
+        <h1>
+          System Assurances,<br>
+          F<span class="red">**</span>K YOU<span class="red">.</span><br>
+          <span style="color:var(--muted);font-size:0.75em;letter-spacing:0.06em;">Deterministic Wallet Coverage for the Onchain Economy</span>
+        </h1>
+        <p style="font-size:0.84rem;color:var(--muted);line-height:1.9;max-width:600px;margin-top:1.5rem;">
+          SAFU is a smart contract protocol that pays out when your wallet gets drained. No committee, no vote, same inputs produce the same output every time.
+        </p>
+        <div class="wp-cover-meta">
+          <span>Contract: <a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer">0xB24A...1480 ↗</a></span>
+          <span><a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">github ↗</a></span>
+          <span><a href="https://aiaudit.hashlock.com/audit/4af6db2e-845f-40bf-99ad-bb28562327d4" target="_blank" rel="noopener noreferrer">hashlock audit ↗</a></span>
+          <span><a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer">etherscan ↗</a></span>
+        </div>
+      </div>
+
+      <div class="wp-stats">
+        <div class="wp-stat"><div class="wp-stat-val">0.015Ξ</div><div class="wp-stat-lbl">STAKE TO ENROLL</div></div>
+        <div class="wp-stat"><div class="wp-stat-val">0.25Ξ</div><div class="wp-stat-lbl">MAX COVERAGE</div></div>
+        <div class="wp-stat"><div class="wp-stat-val">7d</div><div class="wp-stat-lbl">CLAIM COOLDOWN</div></div>
+        <div class="wp-stat"><div class="wp-stat-val">45d</div><div class="wp-stat-lbl">PAYOUT STREAM</div></div>
+        <div class="wp-stat"><div class="wp-stat-val">37/37</div><div class="wp-stat-lbl">FORGE TESTS PASS</div></div>
+        <div class="wp-stat"><div class="wp-stat-val">10/10</div><div class="wp-stat-lbl">HALMOS PROPERTIES</div></div>
+      </div>
+    </div>
+
+    <!-- 01 ABSTRACT -->
+    <div class="wp-slide" id="abstract">
+      <div class="wp-slide-header">
+        <div class="section-label">// 01</div>
+        <h2>Abstract</h2>
+      </div>
+      <div class="wp-body">
+        <p>Every year, billions in crypto are drained from wallets through phishing attacks, stolen keys, and other hacks. The protocols designed to cover these losses require a committee to vote on your claim. Your payout depends on whether strangers with governance tokens believe you.</p>
+        <p><strong>SAFU removes the vote.</strong> The same event always produces the same payout calculation. When a drain is verified, a 7-day cooldown starts, then a 45-day payout stream begins. No committee, no quorum, no waiting room.</p>
+        <p>Stakers deposit ETH to secure a period of wallet coverage. The pooled ETH will earn yield as protocol revenue in the production version. Stakers earn SAFU points during their lock period, convertible to SAFU tokens at network launch in Q1 2027.</p>
+        <p>This document describes how the protocol works, how the economics hold, and where it is heading.</p>
+      </div>
+    </div>
+
+    <!-- 02 PROBLEM -->
+    <div class="wp-slide" id="problem">
+      <div class="wp-slide-header">
+        <div class="section-label">// 02</div>
+        <h2>The Problem</h2>
+      </div>
+      <div class="wp-body">
+        <p>Wallet-level drain is the most consistent attack surface in crypto. Phishing attacks, stolen keys, and malicious approvals collectively account for billions in annual losses. Existing smart contract coverage products protect against code failures, not these. Wallet drains fall through every existing coverage category.</p>
+      </div>
+
+      <div class="wp-grid">
+        <div class="wp-card">
+          <div class="wp-card-title">[ phishing ]</div>
+          <div class="wp-card-body">User signs a transaction that sweeps their wallet to a drain address. Often triggered by a fake website or malicious link.</div>
+        </div>
+        <div class="wp-card">
+          <div class="wp-card-title">[ approval exploit ]</div>
+          <div class="wp-card-body">A previously granted token approval is used to drain the wallet. No new signature required from the victim.</div>
+        </div>
+        <div class="wp-card">
+          <div class="wp-card-title">[ key compromise ]</div>
+          <div class="wp-card-body">The wallet's private key is exposed and everything in it gets moved out automatically. Nothing on-chain can stop it once the key is out.</div>
+        </div>
+      </div>
+
+      <div class="wp-body">
+        <h3>Existing protocols don't cover this</h3>
+        <p>Nexus Mutual, InsurAce, and Sherlock cover smart contract bugs, which are protocol-level failures where code behaves unexpectedly. A wallet drain is a different event entirely, and none of these protocols pay out on it.</p>
+        <p>For the protocols that do attempt wallet-level coverage, every claim goes to a vote. Your payout depends on DAO participation rates you didn't choose. The result is slow, unpredictable, and discretionary.</p>
+
+        <h3>The agent gap</h3>
+        <p>AI agents managing capital on hot wallets cannot exercise human judgment. Coverage for these wallets is not optional. It is a runtime dependency, the same way gas is. No existing product serves this segment. SAFU builds the API that does.</p>
+      </div>
+    </div>
+
+    <!-- 03 WHAT -->
+    <div class="wp-slide" id="what">
+      <div class="wp-slide-header">
+        <div class="section-label">// 03</div>
+        <h2>What SAFU Is</h2>
+      </div>
+      <div class="wp-body">
+        <p>SAFU is a protocol that pays out when your wallet gets drained. The payout is calculated by code, and the same drain event always produces the same result, so there is nothing to argue about and no one to petition.</p>
+        <p>The protocol runs a fraud scanner against every submitted transaction hash. The scanner scores the transaction for drain patterns: sweep completeness, receiver classification, automation signals. That score, combined with the staker's tier and policy terms, produces one output: an entitlement amount, or a rejection reason.</p>
+      </div>
+
+      <div class="wp-callout">
+        <p><strong>The same drain event always produces the same payout calculation, every time.</strong> The calculation is the decision, and neither a vote nor a governance proposal can change it.</p>
+      </div>
+
+      <div class="wp-body">
+        <h3>What this means for AI agents</h3>
+        <p>An agent submits a transaction hash to the SAFU Verify API and receives a signed payout decision programmatically. No human in the loop on either side. Coverage becomes a runtime call, not a claims process.</p>
+      </div>
+
+      <div class="wp-table-wrap">
+        <table class="wp-table">
+          <thead><tr><th>Conventional coverage</th><th>SAFU</th></tr></thead>
+          <tbody>
+            <tr><td>File a claim</td><td><strong>Payout activates automatically</strong></td></tr>
+            <tr><td>Human adjuster</td><td><strong>Oracle + math</strong></td></tr>
+            <tr><td>Governance vote</td><td><strong>No vote</strong></td></tr>
+            <tr><td>Waiting room</td><td><strong>45-day stream, starts in 7 days</strong></td></tr>
+            <tr><td>Discretionary</td><td><strong>Deterministic</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 04 MECHANICS -->
+    <div class="wp-slide" id="mechanics">
+      <div class="wp-slide-header">
+        <div class="section-label">// 04</div>
+        <h2>How It Works</h2>
+      </div>
+      <div class="wp-body">
+        <p>A wallet stakes ETH to enroll. Before enrollment, the fraud scanner classifies the wallet by tier based on its on-chain history, and that tier determines the share of the pool's coverage cap the staker is eligible for.</p>
+      </div>
+
+      <div class="wp-table-wrap">
+        <table class="wp-table">
+          <thead><tr><th>Tier</th><th>Max payout</th><th>Wallet profile</th></tr></thead>
+          <tbody>
+            <tr><td><strong>A</strong></td><td>80% of pool cap</td><td>Clean history, low risk signals</td></tr>
+            <tr><td><strong>B</strong></td><td>70% of pool cap</td><td>Mixed history, moderate signals</td></tr>
+            <tr><td><strong>C</strong></td><td>50% of pool cap</td><td>Higher risk signals detected</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="wp-body">
+        <p>The staker sets a beneficiary address at enrollment. All payouts go to the beneficiary, never to the staked wallet. This protects the payout address from the same attack that triggered the claim.</p>
+
+        <h3>Claim flow</h3>
+      </div>
+
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-content">
+          <div class="step-title">Submit drain transaction</div>
+          <div class="step-desc">The staker submits the transaction hash of the drain event to the SAFU Verify API.</div>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-content">
+          <div class="step-title">Fraud scanner scores it</div>
+          <div class="step-desc">The off-chain scanner checks sweep completeness, receiver classification, and automation signals. Score determines the entitlement amount.</div>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-content">
+          <div class="step-title">Verification pipeline runs</div>
+          <div class="step-desc">Sequential checks: wallet enrolled and active, drain within coverage window, loss above minimum threshold, entitlement within tier cap. Pipeline short-circuits on first failure.</div>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">04</span>
+        <div class="step-content">
+          <div class="step-title">7-day cooldown</div>
+          <div class="step-desc">Approved claims wait 7 days before payout begins. Stake is permanently forfeited at submission.</div>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">05</span>
+        <div class="step-content">
+          <div class="step-title">45-day payout stream</div>
+          <div class="step-desc">Linear payout to beneficiary over 45 days. A 2%/day outflow cap prevents any single event from draining the pool.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 05 SECURITY -->
+    <div class="wp-slide" id="security">
+      <div class="wp-slide-header">
+        <div class="section-label">// 05</div>
+        <h2>Security</h2>
+      </div>
+      <div class="wp-body">
+        <p>SAFUPool v6 is deployed at:</p>
+        <div class="wp-addr"><a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer">0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480 ↗</a></div>
+      </div>
+
+      <div class="wp-table-wrap">
+        <table class="wp-table">
+          <thead><tr><th>Audit</th><th>Result</th><th>Date</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><a href="https://aiaudit.hashlock.com/audit/4af6db2e-845f-40bf-99ad-bb28562327d4" target="_blank" rel="noopener noreferrer">Hashlock AI Audit ↗</a></td>
+              <td><strong>18 findings reviewed, all addressed or accepted</strong></td>
+              <td>May 2026</td>
+            </tr>
+            <tr>
+              <td>Halmos Symbolic Execution (a16z)</td>
+              <td><strong>10 / 10 properties, zero counterexamples</strong></td>
+              <td>May 2026</td>
+            </tr>
+            <tr>
+              <td>Internal security review</td>
+              <td><strong>0 critical · 0 high · 0 medium · 0 low</strong></td>
+              <td>May 2026</td>
+            </tr>
+            <tr>
+              <td>Forge test suite</td>
+              <td><strong>37 / 37 tests pass</strong></td>
+              <td>May 2026</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="wp-body">
+        <h3>Verified by symbolic execution</h3>
+      </div>
+      <ul class="check-list">
+        <li>Claiming permanently forfeits your stake, enforced on-chain by the contract itself</li>
+        <li>Pool balance stays accurate when a claim is cancelled</li>
+        <li>Once a claim is filed, the original stake cannot be withdrawn</li>
+        <li>The two approval keys are always held by different addresses</li>
+        <li>Contract ownership cannot be transferred to the co-approval address</li>
+        <li>The contract never owes more than it holds in ETH</li>
+        <li>Payouts above coverage limits are always blocked</li>
+        <li>A cancelled claim can never release further payments</li>
+      </ul>
+      <div class="wp-verdict">✓ all properties verified across every possible contract state</div>
+
+      <div class="wp-body">
+        <h3>Oracle and wallet safety</h3>
+        <p>The payout oracle signing key is held on a hardware wallet, isolated from the server. All signed messages include the contract address and chain ID, which prevents replay attacks. A 2-of-2 override mechanism (owner + co-signer, separate keys) handles disputes without bypassing rate limits.</p>
+        <p>Staking sends ETH to the pool and grants no token approvals and no spending permissions. The contract cannot access any other asset in your wallet, before, during, or after staking.</p>
+      </div>
+    </div>
+
+    <!-- 06 ECONOMICS -->
+    <div class="wp-slide" id="economics">
+      <div class="wp-slide-header">
+        <div class="section-label">// 06</div>
+        <h2>Economic Model</h2>
+      </div>
+      <div class="wp-body">
+        <p>The staking pool is ETH-only. Claims are paid from this pool. The 2%/day outflow cap and 45-day vesting period ensure no single event can drain it.</p>
+        <p>The initial deployment is a test pool designed to stress-test the system under real conditions. Coverage caps are small by design. Production economics require a larger pool and higher stake amounts, scoped for Q3 2026.</p>
+
+        <h3>Revenue streams</h3>
+      </div>
+
+      <div class="wp-grid">
+        <div class="wp-card">
+          <div class="wp-card-title">[ forfeited stakes ]</div>
+          <div class="wp-card-body">When a claim is filed, the staked ETH stays in the pool after payout. Any amount above the staker's entitlement is protocol revenue.</div>
+          <div class="wp-card-status live">● live now</div>
+        </div>
+        <div class="wp-card">
+          <div class="wp-card-title">[ lido staking yield ]</div>
+          <div class="wp-card-body">In the production vault, pooled ETH will be deposited into Lido as wstETH. ~3-4% APY accrues to the protocol. Not active in the current test pool.</div>
+          <div class="wp-card-status">● planned Q3 2026</div>
+        </div>
+        <div class="wp-card">
+          <div class="wp-card-title">[ custom pool deployments ]</div>
+          <div class="wp-card-body">Communities and protocols deploy their own SAFU pool with custom coverage rules and tier logic. SAFU earns a protocol fee on each pool.</div>
+          <div class="wp-card-status">● planned Q3 2026</div>
+        </div>
+        <div class="wp-card">
+          <div class="wp-card-title">[ verify api ]</div>
+          <div class="wp-card-body">Per-call fee for enterprise and agent integrations. Scoped after first customer cohort is onboarded.</div>
+          <div class="wp-card-status">● planned Q3 2026</div>
+        </div>
+      </div>
+
+      <div class="wp-body">
+        <h3>Why stake?</h3>
+        <p>Stakers provide the pool capital that makes coverage possible. In return: wallet-drain protection for the duration of the lock, plus SAFU points earned linearly over the lock period. Points convert to SAFU tokens at network launch. Principal is returned at the end of the lock if no claim is filed.</p>
+      </div>
+    </div>
+
+    <!-- 07 TOKEN -->
+    <div class="wp-slide" id="token">
+      <div class="wp-slide-header">
+        <div class="section-label">// 07</div>
+        <h2>SAFU Points and Token</h2>
+      </div>
+
+      <div class="wp-callout wp-callout-red">
+        <p>No token exists today. No token is being offered. This section describes the intended design, subject to legal review before implementation.</p>
+      </div>
+
+      <div class="wp-body">
+        <h3>How points work</h3>
+        <p>Every staker earns SAFU points linearly over their lock period. Points are non-transferable. The longer you stake without claiming, the more you accumulate.</p>
+        <p>When a claim is filed, accumulated points are burned as a side effect. The payout flows normally. Stakers who complete their full lock without claiming retain all points and convert them to tokens at launch.</p>
+
+        <h3>Tokens and payouts are mutually exclusive</h3>
+        <p>A staker either files a claim and gets the payout (burning their points), or holds to full term and gets their tokens (principal returned). There is no path to collecting both. This removes the moral hazard present in most DeFi token designs.</p>
+
+        <h3>What the token does</h3>
+      </div>
+
+      <div class="wp-grid">
+        <div class="wp-card">
+          <div class="wp-card-title">[ governance ]</div>
+          <div class="wp-card-body">Vote on protocol parameters: coverage caps, yield allocation, policy terms. Token holders are structurally honest stakers who never extracted from the pool.</div>
+        </div>
+        <div class="wp-card">
+          <div class="wp-card-title">[ pool backstop ]</div>
+          <div class="wp-card-body">Token holders can stake tokens to provide additional coverage capacity, earning a share of protocol revenue in return.</div>
+        </div>
+        <div class="wp-card">
+          <div class="wp-card-title">[ revenue share ]</div>
+          <div class="wp-card-body">A portion of Lido yield and forfeiture revenue distributes to token stakers.</div>
+        </div>
+      </div>
+
+      <div class="wp-body">
+        <h3>Why the token is not a security</h3>
+        <p>Coverage is the primary product. The token is a byproduct of honest participation in that product, not an investment in a profit-sharing enterprise. You stake to get wallet protection. At launch, accumulated points convert to tokens that give you a voice in how the protocol runs.</p>
+        <p>There is no ICO, no presale, no token being sold. Tokens only reach wallets that provided coverage capacity and did not extract from the pool. Tokenomics, supply, and allocation are Q4 2026 work, subject to full legal review.</p>
+      </div>
+    </div>
+
+    <!-- 08 ROADMAP -->
+    <div class="wp-slide" id="roadmap">
+      <div class="wp-slide-header">
+        <div class="section-label">// 08</div>
+        <h2>Roadmap</h2>
+      </div>
+      <div class="step">
+        <span class="step-num">Q2 2026</span>
+        <div class="step-content">
+          <div class="step-title">Low-value mainnet live</div>
+          <div class="step-desc">SAFUPool v6 deployed on Ethereum mainnet. Test pool live to stress-test the system under real conditions. First staker cohort onboarded. Whitepaper published.</div>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">Q3 2026</span>
+        <div class="step-content">
+          <div class="step-title">Seed fundraise + high-value vault</div>
+          <div class="step-desc">Lido wstETH integration, higher coverage caps, agent wallet tier engine, new contract audit. SAFU Verify API launched. Custom pool deployments open for communities and protocols.</div>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">Q4 2026</span>
+        <div class="step-content">
+          <div class="step-title">Community + token design</div>
+          <div class="step-desc">Community building. SAFU Points season opens to public staking. Token design finalised and legal-reviewed. Exchange and market maker conversations begin.</div>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">Q1 2027</span>
+        <div class="step-content">
+          <div class="step-title">Token launch</div>
+          <div class="step-desc">SAFU Token launch. Points-to-token conversion window. DEX listing. Protocol governance goes live.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 09 LEGAL -->
+    <div class="wp-slide" id="legal">
+      <div class="wp-slide-header">
+        <div class="section-label">// 09</div>
+        <h2>Legal</h2>
+      </div>
+      <div class="wp-body">
+        <p>SAFU is not a financial product, insurance product, or investment contract. The protocol provides a deterministic verification service. Coverage depends on fraud scanner output and verification pipeline evaluation. No payout is guaranteed.</p>
+        <p>SAFU tokens, when issued, are utility tokens. They confer governance rights and access to protocol functions. They are not securities under any jurisdiction. This assertion does not constitute legal advice.</p>
+        <p>This whitepaper is for informational purposes only. Nothing in it constitutes a solicitation, offer, or commitment to enter any transaction.</p>
+        <p>Protocol operates under BUSL-1.1 license. Source: <a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">github.com/mrkanchwala/safu-protocol ↗</a></p>
+        <p style="margin-top:3rem;font-size:0.7rem;color:var(--dim);border-top:1px solid var(--border);padding-top:1.5rem;">
+          SAFU — System Assurances, F**k You. &nbsp;·&nbsp;
+          <a href="/">safustaking.com</a> &nbsp;·&nbsp;
+          <a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">GitHub ↗</a> &nbsp;·&nbsp;
+          <a href="https://etherscan.io/address/0xB24Aee4bd963ca9f35b27fec7FbCA678d1201480" target="_blank" rel="noopener noreferrer">Etherscan ↗</a><br>
+          Version 0.1 — May 2026. Subject to revision.
+        </p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="js/whitepaper.js" defer></script>
+</body>
+</html>
