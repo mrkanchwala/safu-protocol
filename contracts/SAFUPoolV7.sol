@@ -172,7 +172,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         uint64   cooldownEnds;        // activation timestamp + 7d
         uint64   vestingEnds;         // cooldownEnds + 45d (day 52 from approval)
         uint256  totalStakedSnapshot; // cap denominator — fixed at activation, not live balance
-        uint8    status;              // 0=unused 1=active 2=completed 3=cancelled 4=overridden 5=pending_points
+        uint8    status;              // 0=unused 1=active 2=completed 3=cancelled 4=reserved 5=pending_points
     }
 
     struct OverrideRequest {
@@ -243,6 +243,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
         require(oracle_         != address(0),   "zero oracle");
         require(coSigner_       != address(0),   "zero coSigner");
         require(coSigner_       != msg.sender,   "coSigner must differ from owner");
+        require(oracle_         != coSigner_,    "oracle must differ from coSigner");
         require(treasuryWallet_ != address(0),   "zero treasury");
         oracle         = oracle_;
         coSigner       = coSigner_;
@@ -340,7 +341,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     // -----------------------------------------------------------------------
 
     /**
-     * @notice Withdraw staked principal after the 90-day lock expires.
+     * @notice Withdraw staked principal (no lock period — exit any time).
      * Blocked while a claim is active (claimActive == true).
      * Suspended flag does NOT block withdrawal — principal always recoverable.
      */
@@ -932,6 +933,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
 
     function setOracle(address newOracle) external onlyOwner {
         require(newOracle != address(0), "zero oracle");
+        require(newOracle != coSigner,   "oracle must differ from coSigner");
         oracle = newOracle;
         emit OracleUpdated(newOracle);
     }
@@ -939,6 +941,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     function setCoSigner(address newCoSigner) external onlyOwner {
         require(newCoSigner != address(0), "zero cosigner");
         require(newCoSigner != owner(),    "cosigner must differ from owner");
+        require(newCoSigner != oracle,     "coSigner must differ from oracle");
         coSigner = newCoSigner;
         emit CoSignerUpdated(newCoSigner);
     }
@@ -974,6 +977,7 @@ contract SAFUPool is Ownable, ReentrancyGuard, Pausable {
     function emergencyExit() external whenPaused nonReentrant {
         StakeRecord storage s = stakes[msg.sender];
         require(s.amount > 0 && !s.withdrawn, "no active stake");
+        require(!s.claimActive, "SAFU: claim active");
         uint256 wstethOut = s.wstethDeployed;
         uint256 ethAmount = s.amount;
         s.withdrawn = true;
