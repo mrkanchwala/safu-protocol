@@ -526,15 +526,15 @@ contract SAFUPoolV8Test is Test {
     // ─────────────────────────────────────────────────────────────────────────
 
     function test_tierCap_A_formula_correct() public view {
-        // Tier A cap formula: stake × 15 × 7500 / 10000
-        // At max stake 0.75 ETH → 0.75 × 15 × 0.75 = 8.4375 ETH
-        uint256 cap = 0.75 ether * 15 * 7_500 / 10_000;
-        assertEq(cap, 8.4375 ether);
+        // Tier A cap formula: stake × 15 × 10000 / 10000 = stake × 15
+        // At max stake 0.75 ETH → 0.75 × 15 = 11.25 ETH
+        uint256 cap = 0.75 ether * 15 * 10_000 / 10_000;
+        assertEq(cap, 11.25 ether);
     }
 
     function test_tierCap_A_above_cap_reverts() public {
         _stakeAndReady(staker1, 0.75 ether);
-        uint256 cap = 0.75 ether * 15 * 7_500 / 10_000;
+        uint256 cap = 0.75 ether * 15 * 10_000 / 10_000;
         vm.expectRevert("exceeds tier cap");
         _ownerSubmitClaim(staker1, keccak256("tx1"), cap + 1, 1, block.timestamp);
     }
@@ -549,8 +549,8 @@ contract SAFUPoolV8Test is Test {
 
     function test_tierCap_B_mid_stake() public {
         _stakeAndReady(staker1, 0.375 ether);
-        // Tier B cap = 0.375 × 10 × 7500/10000 = 2.8125 ETH
-        uint256 cap = 0.375 ether * 10 * 7_500 / 10_000;
+        // Tier B cap = 0.375 × 10 = 3.75 ETH
+        uint256 cap = 0.375 ether * 10 * 10_000 / 10_000;
         // Small pool can't hold solvency for 2.8 ETH payout with 0.375 ETH stake
         // Just test: entitlement > cap reverts
         vm.expectRevert("exceeds tier cap");
@@ -559,8 +559,8 @@ contract SAFUPoolV8Test is Test {
 
     function test_tierCap_C_min_stake() public {
         _stakeAndReady(staker1, 0.01 ether);
-        // Tier C cap = 0.01 × 5 × 7500/10000 = 0.0375 ETH
-        uint256 cap = 0.01 ether * 5 * 7_500 / 10_000;
+        // Tier C cap = 0.01 × 5 = 0.05 ETH
+        uint256 cap = 0.01 ether * 5 * 10_000 / 10_000;
         vm.expectRevert("exceeds tier cap");
         _ownerSubmitClaim(staker1, keccak256("tx1"), cap + 1, 3, block.timestamp);
     }
@@ -789,9 +789,9 @@ contract SAFUPoolV8Test is Test {
         _stakeAndReady(staker1, 0.375 ether);
         bytes32 txHash = keccak256("tx_override");
         bytes32 cId   = _claimId(staker1, txHash);
-        // Tier C cap = 0.375 × 5 × 75% = 1.40625 ETH
+        // Tier C cap = 0.375 × 5 = 1.875 ETH
         // Try to override with entitlement above tier C cap
-        uint256 cap = 0.375 ether * 5 * 7_500 / 10_000;
+        uint256 cap = 0.375 ether * 5 * 10_000 / 10_000;
         vm.expectRevert("exceeds tier cap");
         pool.approveOverride(cId, staker1, txHash, cap + 1, 3);
     }

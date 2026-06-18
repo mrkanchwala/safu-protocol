@@ -38,7 +38,7 @@ interface ICurvePool {
  *
  * ETH-only, no lock. Permissionless enrollment: any stake in [STAKE_MIN, STAKE_MAX] accepted.
  * Tier (A/B/C) assessed off-chain at claim time — not at enrollment.
- * Coverage cap: stake × tier_ratio × 75% (A=15×, B=10×, C=5×).
+ * Coverage cap: stake × tier_ratio (A=15×, B=10×, C=5×).
  *
  * Payout controls:
  *   - submitClaim: oracle-signed (tier + all params in ECDSA sig); 90-day time gate
@@ -53,18 +53,18 @@ interface ICurvePool {
  *   V8-2  — proportional points: (stake / STAKE_MAX) × base_rate / day
  *   V8-3  — 90-day time gate replaces MIN_CLAIM_POINTS = 9,000
  *   V8-4  — tier assessed at claim; Claim struct carries tier (B1 fix)
- *   V8-5  — coverage cap: stake × tier_ratio × TIER_COVERAGE_BPS / 10_000
+ *   V8-5  — coverage cap: stake × tier_ratio (TIER_COVERAGE_BPS = 10_000)
  *   V8-6  — dynamic outflow cap: 5%/3%/1%/day by utilization (replaces flat 2%)
  *   V8-B2 — tier included in submitClaim ECDSA sig — prevents tier forgery
  *
  * Pool economics:
- *   MAX_POOL_ETH = 60 ETH. Coverage: stake × tier_ratio × 75%.
+ *   MAX_POOL_ETH = 60 ETH. Coverage: stake × tier_ratio.
  *   Solvency invariant: totalAllocated + entitlement <= totalStaked (enforced in submitClaim).
  *
  * Tier system (floor = C, DECLINE removed):
- *   1 = A → up to 15× coverage on stake × 75%   (e.g. 0.75 ETH → 8.4375 ETH cap)
- *   2 = B → up to 10× coverage on stake × 75%   (e.g. 0.375 ETH → 2.8125 ETH cap)
- *   3 = C → up to  5× coverage on stake × 75%   (e.g. 0.01 ETH  → 0.0375 ETH cap)
+ *   1 = A → 15× coverage on stake   (e.g. 0.75 ETH → 11.25 ETH cap)
+ *   2 = B → 10× coverage on stake   (e.g. 0.375 ETH → 3.75 ETH cap)
+ *   3 = C →  5× coverage on stake   (e.g. 0.01 ETH  → 0.05 ETH cap)
  */
 contract SAFUPoolV8 is Ownable, ReentrancyGuard, Pausable {
 
@@ -74,7 +74,7 @@ contract SAFUPoolV8 is Ownable, ReentrancyGuard, Pausable {
 
     uint256 public constant STAKE_MIN         = 0.01 ether;
     uint256 public constant STAKE_MAX         = 0.75 ether;
-    uint256 public constant TIER_COVERAGE_BPS = 7_500;   // 75% max payout — all tiers
+    uint256 public constant TIER_COVERAGE_BPS = 10_000;  // 100% of tier ratio — payout = stake × ratio
     uint256 public constant TIER_A_RATIO      = 15;      // Tier A: 15× stake coverage
     uint256 public constant TIER_B_RATIO      = 10;      // Tier B: 10× stake coverage
     uint256 public constant TIER_C_RATIO      = 5;       // Tier C:  5× stake coverage

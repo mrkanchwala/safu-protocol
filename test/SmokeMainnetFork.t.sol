@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "../contracts/SAFUPoolV8.sol";
 
 contract FullSmokeMainnetFork is Test {
-    SAFUPoolV8 pool = SAFUPoolV8(payable(0x5Be5B9e1Db8be4B209aD6E6982d1e69FC9a54ec0));
+    SAFUPoolV8 pool = SAFUPoolV8(payable(0xa170f0937DEc353C1806eaC0c3d559524d458641));
 
     address wallet      = address(0xAA01);
     address beneficiary = address(0xBB02);
