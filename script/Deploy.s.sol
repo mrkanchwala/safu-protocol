@@ -2,13 +2,13 @@
 pragma solidity 0.8.25;
 
 import "forge-std/Script.sol";
-import "../contracts/SAFUPoolV7.sol";
+import "../contracts/SAFUPoolV8.sol";
 
 /**
- * SAFUPool v7 deploy script — Ethereum mainnet.
+ * SAFUPool v8 deploy script — Ethereum mainnet.
  *
- * Deploys SAFUPool and immediately calls setCoSigner() in the same broadcast.
- * This guarantees the 2-of-2 override key is never left as owner (H0 gate).
+ * Deploys SAFUPoolV8 with 4-arg constructor (oracle, coSigner, maxPoolSize, treasuryWallet).
+ * CoSigner set at deploy time — 2-of-2 override key live from block 0.
  *
  * Required env vars (set before running):
  *   DEPLOY_ORACLE      — oracle address (derives from SAFU_ORACLE_KEY on VPS)
@@ -41,7 +41,7 @@ contract DeployScript is Script {
 
         address deployer = vm.addr(deployerPk);
 
-        console.log("=== SAFUPool v7 Deploy ===");
+        console.log("=== SAFUPool v8 Deploy ===");
         console.log("Deployer (owner):", deployer);
         console.log("Oracle:          ", oracle_);
         console.log("CoSigner:        ", coSigner_);
@@ -56,8 +56,8 @@ contract DeployScript is Script {
 
         vm.startBroadcast(deployerPk);
 
-        // v7: 4-arg constructor — oracle, coSigner, maxPoolSize, treasuryWallet
-        SAFUPool pool = new SAFUPool(oracle_, coSigner_, maxPool_, treasury_);
+        // v8: 4-arg constructor — oracle, coSigner, maxPoolSize, treasuryWallet
+        SAFUPoolV8 pool = new SAFUPoolV8(oracle_, coSigner_, maxPool_, treasury_);
         console.log("SAFUPool deployed:", address(pool));
         console.log("CoSigner active from deploy: 2-of-2 live");
 
