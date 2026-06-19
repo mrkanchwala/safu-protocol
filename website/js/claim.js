@@ -38,7 +38,7 @@ window.SAFU.claim = (() => {
       const verdict = data.verdict;
 
       if (verdict === 'drain_detected') {
-        const tier = data.tier || '—';
+        const tier = String(data.tier || '—').replace(/[<>&"']/g, '');
         const entitlement = data.entitlement ? `${ethers.formatEther(BigInt(data.entitlement))} ETH` : '—';
         showStatus('status-scan', 'ok',
           `> score: ${score}/100\n> verdict: DRAIN DETECTED\n> tier: ${tier} &nbsp;|&nbsp; entitlement: ${entitlement}\n> tier will be assessed on claim submission`);
@@ -97,11 +97,13 @@ window.SAFU.claim = (() => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'claim submission failed');
 
+      const claimId = String(data.claim_id || '').replace(/[^0-9a-fA-Fx]/g, '');
+      const onChainTx = String(data.on_chain_tx || '').replace(/[^0-9a-fA-Fx]/g, '');
       statusEl.innerHTML =
         `> claim activated on-chain<br>` +
         `> score: ${score}/100<br>` +
-        `> claim id: ${data.claim_id}<br>` +
-        `> tx: <a href="https://etherscan.io/tx/${data.on_chain_tx}" target="_blank" rel="noopener noreferrer">${data.on_chain_tx.slice(0,20)}…</a><br>` +
+        `> claim id: ${claimId}<br>` +
+        `> tx: <a href="https://etherscan.io/tx/${onChainTx}" target="_blank" rel="noopener noreferrer">${onChainTx.slice(0,20)}…</a><br>` +
         `> payout streaming to your beneficiary`;
     } catch (e) {
       hide('auto-claim-section');
