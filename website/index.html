@@ -40,7 +40,7 @@
   "operatingSystem": "Ethereum Mainnet",
   "offers": {
     "@type": "Offer",
-    "description": "Up to 15:1 coverage ratio, tiered staking (0.25–0.75 ETH). Payout activates automatically on verified drain events.",
+    "description": "Up to 15:1 coverage ratio, stake 0.01–0.75 ETH. Payout activates automatically on verified drain events.",
     "priceCurrency": "ETH"
   },
   "featureList": [
@@ -53,7 +53,7 @@
   "sameAs": [
     "https://x.com/safu_staking",
     "https://github.com/mrkanchwala/safu-protocol",
-    "https://etherscan.io/address/0x8ff7518ff9352F4a81d6914E8A08A47085042896"
+    "https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641"
   ]
 }
 </script>
@@ -71,7 +71,7 @@
            img-src 'self' data: https://imagedelivery.net https://registry.walletconnect.com;
            frame-src https://verify.walletconnect.org;">
 
-<link rel="stylesheet" href="css/styles.css?v=26">
+<link rel="stylesheet" href="css/styles.css?v=30">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="logo.png">
 </head>
@@ -98,7 +98,7 @@
       <a href="#about" class="nav-hide">about</a>
       <a href="#security" class="nav-hide">security</a>
       <a href="#team" class="nav-hide">team</a>
-      <a href="https://etherscan.io/address/0x8ff7518ff9352F4a81d6914E8A08A47085042896" target="_blank" rel="noopener noreferrer" class="nav-hide nav-hide-md">contract ↗</a>
+      <a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer" class="nav-hide nav-hide-md">contract ↗</a>
       <a href="https://docs.google.com/forms/d/1qD9IrIkfs39Wupaw5y-zvCS46Ppq4JQiIsRgV9D3s80/viewform" target="_blank" rel="noopener noreferrer" class="nav-hide nav-hide-md">feedback</a>
       <button id="btn-connect">[ connect wallet ]</button>
       <button id="btn-disconnect" class="d-none">[ disconnect ]</button>
@@ -139,8 +139,8 @@
       <div class="stat-lbl">COVERAGE RATIO</div>
     </div>
     <div>
-      <div class="stat-val">ETH</div>
-      <div class="stat-lbl">STAKE BY TIER</div>
+      <div class="stat-val">0.01–0.75 ETH</div>
+      <div class="stat-lbl">STAKE RANGE</div>
     </div>
     <div>
       <div class="stat-val">NO LOCK</div>
@@ -197,10 +197,11 @@
       <div class="step">
         <div class="step-num">[03]</div>
         <div class="step-content">
-          <div class="step-title">Get oracle approval</div>
-          <div class="step-desc">The SAFU oracle scores your wallet and issues a signed approval.</div>
-          <div class="mt-sm">
-            <button class="btn btn-cyan" id="btn-enroll" disabled>[ get approval ]</button>
+          <div class="step-title">Choose your stake amount</div>
+          <div class="step-desc">Any amount between 0.01 and 0.75 ETH. Your tier is assessed at claim time, not at staking. Higher stakes get proportionally higher coverage.</div>
+          <div class="input-row">
+            <input class="term-input" id="input-amount" type="number" step="0.01" min="0.01" max="0.75" placeholder="0.01 – 0.75 ETH" autocomplete="off" spellcheck="false" />
+            <button class="btn btn-cyan" id="btn-enroll" disabled>[ confirm amount ]</button>
           </div>
           <div class="status-box" id="status-enroll"></div>
         </div>
@@ -210,7 +211,7 @@
         <div class="step-num">[04]</div>
         <div class="step-content">
           <div class="step-title">Stake ETH</div>
-          <div class="step-desc">Your wallet will prompt for confirmation. <strong>Coverage activates immediately after the tx confirms.</strong></div>
+          <div class="step-desc">Your wallet will prompt for confirmation. <strong>Coverage activates immediately after the tx confirms. No lock period — withdraw anytime.</strong></div>
           <div class="mt-sm">
             <button class="btn btn-red" id="btn-stake" disabled>[ stake ]</button>
           </div>
@@ -371,24 +372,24 @@
       <div class="terminal sec-panel">
         <div class="terminal-bar">
           <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <span class="terminal-title">security-audit.txt — 2026-06-17</span>
+          <span class="terminal-title">security-audit.txt — 2026-06-18</span>
         </div>
-        <div class="sec-label-inner">[ Security Audit — Tier-1 Benchmark ]</div>
+        <div class="sec-label-inner">[ Security Audit — CSO + Slither ]</div>
         <table class="sec-table">
           <tr><td class="sev sev-cr">CRITICAL</td><td class="sev-count">0</td><td class="sev-note"></td></tr>
           <tr><td class="sev sev-hi">HIGH</td><td class="sev-count">0</td><td class="sev-note"></td></tr>
           <tr><td class="sev sev-me">MEDIUM</td><td class="sev-count">0</td><td class="sev-note"></td></tr>
-          <tr><td class="sev sev-lo">LOW</td><td class="sev-count">3</td><td class="sev-note">accepted design choices</td></tr>
-          <tr><td class="sev sev-in">INFO</td><td class="sev-count">4</td><td class="sev-note">accepted</td></tr>
+          <tr><td class="sev sev-lo">LOW</td><td class="sev-count">0</td><td class="sev-note"></td></tr>
+          <tr><td class="sev sev-in">INFO</td><td class="sev-count">0</td><td class="sev-note"></td></tr>
         </table>
-        <div class="sec-verdict-ok">✓ ToB + OpenZeppelin standards — PASS</div>
+        <div class="sec-verdict-ok">✓ CSO + Slither — PASS</div>
       </div>
 
       <!-- Halmos Symbolic Execution -->
       <div class="terminal sec-panel">
         <div class="terminal-bar">
           <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <span class="terminal-title">halmos-symbolic.txt — 2026-06-17</span>
+          <span class="terminal-title">halmos-symbolic.txt — 2026-06-18</span>
         </div>
         <div class="sec-label-inner">[ Halmos Symbolic Execution — a16z ]</div>
         <div class="halmos-score">12 / 12</div>
@@ -418,17 +419,17 @@
           <span class="sev sev-me">MEDIUM 0</span>
           <span class="sev sev-lo">LOW 0</span>
         </div>
-        <div class="sec-verdict-ok">✓ PASS — 2026-06-17</div>
+        <div class="sec-verdict-ok">✓ PASS — 2026-06-18</div>
       </div>
       <div class="sec-mini-card">
         <div class="sec-mini-title">[ forge test suite ]</div>
-        <div class="sec-mini-big">198 / 198</div>
+        <div class="sec-mini-big">75 / 75</div>
         <div class="sec-mini-sub">tests pass — full coverage</div>
       </div>
       <div class="sec-mini-card">
         <div class="sec-mini-title">[ contract ]</div>
         <div class="sec-mini-sub">Solidity 0.8.25 · BUSL-1.1</div>
-        <a href="https://etherscan.io/address/0x8ff7518ff9352F4a81d6914E8A08A47085042896" target="_blank" rel="noopener noreferrer" class="sec-ext-link">etherscan verified ↗</a>
+        <a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer" class="sec-ext-link">etherscan verified ↗</a>
       </div>
     </div>
 
@@ -441,6 +442,10 @@
       <div class="sec-guarantee-item">
         <div class="sec-mini-title">[ your stake is protected on-chain ]</div>
         <p class="sec-mini-sub">Mathematical verification confirmed the pool always holds more ETH than it owes. Only you can withdraw your staked ETH, and that guarantee holds regardless of who operates the pool or holds the signing key.</p>
+      </div>
+      <div class="sec-guarantee-item">
+        <div class="sec-mini-title">[ claim submission &amp; MEV ]</div>
+        <p class="sec-mini-sub">Claim transactions are broadcast to the public mempool like any Ethereum transaction. Frontrunning bots cannot steal your claim — only the oracle can sign a valid payout, and the payout address is locked to your wallet at stake time. For lowest gas costs, submit claims during off-peak hours (weekends or early UTC mornings).</p>
       </div>
     </div>
 
@@ -477,7 +482,7 @@
     <div class="footer-links">
       <span>SAFU — System Assurances, F**k You</span>
       <a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">github ↗</a>
-      <a href="https://etherscan.io/address/0x8ff7518ff9352F4a81d6914E8A08A47085042896" target="_blank" rel="noopener noreferrer">etherscan ↗</a>
+      <a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer">etherscan ↗</a>
     </div>
 
     <!-- Social + contact -->
@@ -499,7 +504,7 @@
     </div>
 
     <div class="contract-addr">
-      <span class="text-dim">contract:</span> 0x8ff7518ff9352F4a81d6914E8A08A47085042896
+      <span class="text-dim">contract:</span> 0xa170f0937DEc353C1806eaC0c3d559524d458641
     </div>
   </div>
 </footer>
@@ -507,16 +512,16 @@
 <!-- ── SCRIPTS — load order matters ────────────────────────────────── -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="js/config.js?v=23"></script>
-<script src="js/abi.js?v=23"></script>
-<script src="js/state.js?v=23"></script>
-<script src="js/ui.js?v=23"></script>
-<script src="js/init.js?v=23"></script>
-<script src="js/wallet.js?v=26"></script>
-<script src="js/stake.js?v=23"></script>
-<script src="js/claim.js?v=23"></script>
-<script src="js/stream.js?v=23"></script>
-<script src="js/events.js?v=23"></script>
+<script src="js/config.js?v=30"></script>
+<script src="js/abi.js?v=30"></script>
+<script src="js/state.js?v=30"></script>
+<script src="js/ui.js?v=30"></script>
+<script src="js/init.js?v=30"></script>
+<script src="js/wallet.js?v=30"></script>
+<script src="js/stake.js?v=30"></script>
+<script src="js/claim.js?v=30"></script>
+<script src="js/stream.js?v=30"></script>
+<script src="js/events.js?v=30"></script>
 
 </body>
 </html>

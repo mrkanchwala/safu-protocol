@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAFU — Whitepaper v0.1</title>
+<title>SAFU — Whitepaper v0.2</title>
 <meta name="description" content="SAFU Whitepaper — Deterministic wallet coverage for the onchain economy.">
 <link rel="canonical" href="https://safustaking.com/whitepaper.html">
 
@@ -30,7 +30,7 @@
 <meta http-equiv="X-Frame-Options" content="DENY">
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 
-<link rel="stylesheet" href="css/styles.css?v=26">
+<link rel="stylesheet" href="css/styles.css?v=30">
 <link rel="stylesheet" href="css/whitepaper.css?v=1">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
@@ -53,7 +53,7 @@
 
   <!-- SIDEBAR -->
   <aside class="wp-sidebar">
-    <div class="wp-sidebar-label">// whitepaper v0.1</div>
+    <div class="wp-sidebar-label">// whitepaper v0.2</div>
     <button class="wp-nav-btn" data-target="cover">
       <span class="wp-nav-num">// cover</span>
       SAFU
@@ -102,7 +102,7 @@
     <!-- COVER -->
     <div class="wp-slide" id="cover">
       <div class="wp-cover">
-        <div class="section-label">// whitepaper — v0.1 — May 2026</div>
+        <div class="section-label">// whitepaper — v0.2 — June 2026</div>
         <h1>
           System Assurances,<br>
           F<span class="red">**</span>K YOU<span class="red">.</span><br>
@@ -112,18 +112,18 @@
           SAFU is a smart contract protocol that pays out when your wallet gets drained. No committee, no vote, same inputs produce the same output every time.
         </p>
         <div class="wp-cover-meta">
-          <span>Contract: <a href="https://etherscan.io/address/0x8ff7518ff9352F4a81d6914E8A08A47085042896" target="_blank" rel="noopener noreferrer">0x8ff7...2896 ↗</a></span>
+          <span>Contract: <a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer">0xa170...d641 ↗</a></span>
           <span><a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">github ↗</a></span>
-          <span><a href="https://etherscan.io/address/0x8ff7518ff9352F4a81d6914E8A08A47085042896" target="_blank" rel="noopener noreferrer">etherscan ↗</a></span>
+          <span><a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer">etherscan ↗</a></span>
         </div>
       </div>
 
       <div class="wp-stats">
-        <div class="wp-stat"><div class="wp-stat-val">ETH</div><div class="wp-stat-lbl">STAKE BY TIER</div></div>
+        <div class="wp-stat"><div class="wp-stat-val">0.01–0.75 ETH</div><div class="wp-stat-lbl">STAKE RANGE</div></div>
         <div class="wp-stat"><div class="wp-stat-val">UP TO 15:1</div><div class="wp-stat-lbl">COVERAGE RATIO</div></div>
         <div class="wp-stat"><div class="wp-stat-val">7d</div><div class="wp-stat-lbl">CLAIM COOLDOWN</div></div>
         <div class="wp-stat"><div class="wp-stat-val">45d</div><div class="wp-stat-lbl">PAYOUT STREAM</div></div>
-        <div class="wp-stat"><div class="wp-stat-val">198/198</div><div class="wp-stat-lbl">FORGE TESTS PASS</div></div>
+        <div class="wp-stat"><div class="wp-stat-val">75/75</div><div class="wp-stat-lbl">FORGE TESTS PASS</div></div>
         <div class="wp-stat"><div class="wp-stat-val">12/12</div><div class="wp-stat-lbl">HALMOS PROPERTIES</div></div>
       </div>
     </div>
@@ -137,7 +137,7 @@
       <div class="wp-body">
         <p>Every year, billions in crypto are drained from wallets through phishing attacks, stolen keys, and other hacks. The protocols designed to cover these losses require a committee to vote on your claim. Your payout depends on whether strangers with governance tokens believe you.</p>
         <p><strong>SAFU removes the vote.</strong> The same event always produces the same payout calculation. When a drain is verified, a 7-day cooldown starts, then a 45-day payout stream begins. No committee, no quorum, no waiting room.</p>
-        <p>Stakers deposit ETH to secure wallet coverage with no lock period. The pooled ETH earns yield through Lido as protocol revenue. Stakers earn SAFU points while staked, convertible to SAFU tokens at network launch in Q1 2027.</p>
+        <p>Stakers deposit any amount between 0.01 and 0.75 ETH to secure wallet coverage with no lock period. Coverage scales proportionally — up to 15x the staked amount. Stakers earn SAFU points while staked, convertible to SAFU tokens at network launch in Q1 2027.</p>
         <p>This document describes how the protocol works, how the economics hold, and where it is heading.</p>
       </div>
     </div>
@@ -218,16 +218,16 @@
         <h2>How It Works</h2>
       </div>
       <div class="wp-body">
-        <p>A wallet stakes ETH to enroll. Before enrollment, the fraud scanner classifies the wallet by tier based on its on-chain history, and that tier determines the share of the pool's coverage cap the staker is eligible for.</p>
+        <p>A wallet stakes any amount between 0.01 and 0.75 ETH to enroll. Enrollment is permissionless — no oracle approval required. The wallet's tier is assessed at claim time, not at staking. Tier determines the coverage multiplier applied to the staked amount.</p>
       </div>
 
       <div class="wp-table-wrap">
         <table class="wp-table">
-          <thead><tr><th>Tier</th><th>Max payout</th><th>Wallet profile</th></tr></thead>
+          <thead><tr><th>Tier</th><th>Coverage multiplier</th><th>Max payout (0.75 ETH stake)</th><th>Wallet profile</th></tr></thead>
           <tbody>
-            <tr><td><strong>A</strong></td><td>80% of pool cap</td><td>Clean history, low risk signals</td></tr>
-            <tr><td><strong>B</strong></td><td>70% of pool cap</td><td>Mixed history, moderate signals</td></tr>
-            <tr><td><strong>C</strong></td><td>50% of pool cap</td><td>Higher risk signals detected</td></tr>
+            <tr><td><strong>A</strong></td><td>15x</td><td>11.25 ETH</td><td>Clean history, low risk signals</td></tr>
+            <tr><td><strong>B</strong></td><td>10x</td><td>7.5 ETH</td><td>Mixed history, moderate signals</td></tr>
+            <tr><td><strong>C</strong></td><td>5x</td><td>3.75 ETH</td><td>Higher risk signals detected</td></tr>
           </tbody>
         </table>
       </div>
@@ -270,7 +270,7 @@
         <span class="step-num">05</span>
         <div class="step-content">
           <div class="step-title">45-day payout stream</div>
-          <div class="step-desc">Linear payout to beneficiary over 45 days. A 2%/day outflow cap prevents any single event from draining the pool.</div>
+          <div class="step-desc">Linear payout to beneficiary over 45 days. A dynamic outflow cap (5%/3%/1% per day by tier) prevents any single event from draining the pool.</div>
         </div>
       </div>
     </div>
@@ -282,8 +282,8 @@
         <h2>Security</h2>
       </div>
       <div class="wp-body">
-        <p>SAFUPool v7 is deployed at:</p>
-        <div class="wp-addr"><a href="https://etherscan.io/address/0x8ff7518ff9352F4a81d6914E8A08A47085042896" target="_blank" rel="noopener noreferrer">0x8ff7518ff9352F4a81d6914E8A08A47085042896 ↗</a></div>
+        <p>SAFUPool v8 is deployed at:</p>
+        <div class="wp-addr"><a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer">0xa170f0937DEc353C1806eaC0c3d559524d458641 ↗</a></div>
       </div>
 
       <div class="wp-table-wrap">
@@ -307,7 +307,7 @@
             </tr>
             <tr>
               <td>Forge test suite</td>
-              <td><strong>198 / 198 tests pass</strong></td>
+              <td><strong>75 / 75 tests pass</strong></td>
               <td>June 2026</td>
             </tr>
           </tbody>
@@ -331,7 +331,7 @@
 
       <div class="wp-body">
         <h3>Oracle and wallet safety</h3>
-        <p>The payout oracle signing key is held on a hardware wallet, isolated from the server. All signed messages include the contract address and chain ID, which prevents replay attacks. A 2-of-2 override mechanism (owner + co-signer, separate keys) handles disputes without bypassing rate limits.</p>
+        <p>The payout oracle signing key is held in AWS KMS (secp256k1, eu-north-1), isolated from the server runtime. All signed messages include the contract address and chain ID, which prevents replay attacks. A 2-of-2 override mechanism (owner + co-signer, separate keys) handles disputes without bypassing rate limits.</p>
         <p>Staking sends ETH to the pool and grants no token approvals and no spending permissions. The contract cannot access any other asset in your wallet, before, during, or after staking.</p>
       </div>
     </div>
@@ -343,7 +343,7 @@
         <h2>Economic Model</h2>
       </div>
       <div class="wp-body">
-        <p>The staking pool is ETH-only. Claims are paid from this pool. The 2%/day outflow cap and 45-day vesting period ensure no single event can drain it.</p>
+        <p>The staking pool is ETH-only. Claims are paid from this pool. A dynamic outflow cap (5%/3%/1% per day by tier) and 45-day vesting period ensure no single event can drain it.</p>
         <p>The initial deployment is a test pool designed to stress-test the system under real conditions. Coverage caps are small by design. Production economics require a larger pool and higher stake amounts, scoped for Q3 2026.</p>
 
         <h3>Revenue streams</h3>
@@ -391,7 +391,7 @@
 
       <div class="wp-body">
         <h3>How points work</h3>
-        <p>Every staker earns SAFU points while staked, at accelerating rates: 100/day for the first 90 days, then 120, 150, and 200/day after a year. Points are non-transferable and accumulate across staking cycles.</p>
+        <p>Every staker earns SAFU points proportional to their stake amount, at accelerating rates: (stake/0.75) × 100/day for the first 90 days, then 120, 150, and 200/day after a year. Points are non-transferable and accumulate across staking cycles.</p>
         <p>When a claim is filed, 9,000 points are burned and any remainder is banked permanently. The payout flows normally. Stakers who withdraw without claiming retain all points and convert them to tokens at launch.</p>
 
         <h3>Tokens and payouts are mutually exclusive</h3>
@@ -432,7 +432,7 @@
         <span class="step-num">Q2 2026</span>
         <div class="step-content">
           <div class="step-title">Low-value mainnet live</div>
-          <div class="step-desc">SAFUPool v7 deployed on Ethereum mainnet with tiered staking, Lido yield integration, and points system. First staker cohort onboarded. Whitepaper published.</div>
+          <div class="step-desc">SAFUPoolV8 deployed on Ethereum mainnet with proportional staking (0.01–0.75 ETH), permissionless enrollment, KMS oracle signing, and points system. First staker cohort onboarded. Whitepaper published.</div>
         </div>
       </div>
       <div class="step">
@@ -473,8 +473,8 @@
           SAFU — System Assurances, F**k You. &nbsp;·&nbsp;
           <a href="/">safustaking.com</a> &nbsp;·&nbsp;
           <a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">GitHub ↗</a> &nbsp;·&nbsp;
-          <a href="https://etherscan.io/address/0x8ff7518ff9352F4a81d6914E8A08A47085042896" target="_blank" rel="noopener noreferrer">Etherscan ↗</a><br>
-          Version 0.1 — May 2026. Subject to revision.
+          <a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer">Etherscan ↗</a><br>
+          Version 0.1 — June 2026. Subject to revision.
         </p>
       </div>
     </div>

@@ -1,11 +1,11 @@
-// Stake flow — enroll (oracle approval) + stakeETH
+// Stake flow — permissionless V8 (no oracle approval needed)
 window.SAFU = window.SAFU || {};
 
 window.SAFU.stake = (() => {
   const { showStatus, loader } = window.SAFU.ui;
   const S = window.SAFU.state;
 
-  async function handleEnroll() {
+  function handleEnroll() {
     if (!S.walletAddress) return;
 
     const beneficiary = document.getElementById('input-beneficiary').value.trim();
@@ -18,40 +18,22 @@ window.SAFU.stake = (() => {
       return;
     }
 
-    document.getElementById('btn-enroll').disabled = true;
-    showStatus('status-enroll', 'info', loader('Scoring wallet'));
-
-    try {
-      const res = await fetch(`${CONFIG.SAFU_API_BASE}/v1/enroll`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet_address: S.walletAddress, beneficiary }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new Error(err.detail || res.statusText);
-      }
-
-      S.enrollData = await res.json();
-      const tierNames = { 1: 'A', 2: 'B', 3: 'C' };
-      const tier = tierNames[S.enrollData.tier_uint8] || S.enrollData.tier;
-      const deadline = new Date(S.enrollData.deadline * 1000).toUTCString();
-
-      const stakeAmt = { 1: '0.25', 2: '0.50', 3: '0.75' }[S.enrollData.tier_uint8] || '0.75';
-      showStatus('status-enroll', 'ok',
-        `> oracle approval issued\n> tier: ${tier}, stake ${stakeAmt} ETH\n> deadline: ${deadline}`);
-      document.getElementById('btn-stake').textContent = `[ stake ${stakeAmt} ETH ]`;
-      document.getElementById('btn-stake').disabled = false;
-
-    } catch(e) {
-      showStatus('status-enroll', 'err', `Error: ${e.message}`);
-      document.getElementById('btn-enroll').disabled = false;
+    const amountInput = document.getElementById('input-amount');
+    const amount = parseFloat(amountInput?.value);
+    if (isNaN(amount) || amount < 0.01 || amount > 0.75) {
+      showStatus('status-enroll', 'err', 'Enter an amount between 0.01 and 0.75 ETH.');
+      return;
     }
+
+    S._stakeAmount = amount.toString();
+    showStatus('status-enroll', 'ok',
+      `> amount: ${S._stakeAmount} ETH\n> tier: assessed at claim time\n> ready to stake`);
+    document.getElementById('btn-stake').textContent = `[ stake ${S._stakeAmount} ETH ]`;
+    document.getElementById('btn-stake').disabled = false;
   }
 
   async function handleStake() {
-    if (!S.enrollData || !S.contract) return;
+    if (!S._stakeAmount || !S.contract) return;
 
     const beneficiary = document.getElementById('input-beneficiary').value.trim();
     if (!ethers.isAddress(beneficiary)) {
@@ -62,24 +44,13 @@ window.SAFU.stake = (() => {
       showStatus('status-stake', 'err', 'Beneficiary must differ from your staker wallet.');
       return;
     }
-    if (S.enrollData.deadline && Math.floor(Date.now() / 1000) > S.enrollData.deadline) {
-      showStatus('status-stake', 'err', 'Oracle approval expired — click [ get approval ] again.');
-      document.getElementById('btn-stake').disabled = true;
-      document.getElementById('btn-enroll').disabled = false;
-      return;
-    }
 
     document.getElementById('btn-stake').disabled = true;
     showStatus('status-stake', 'info', loader('Sending transaction'));
 
     try {
-      const tierAmounts = { 1: CONFIG.STAKE_TIER_A_ETH, 2: CONFIG.STAKE_TIER_B_ETH, 3: CONFIG.STAKE_TIER_C_ETH };
-      const stakeWei = ethers.parseEther(tierAmounts[S.enrollData.tier_uint8] || CONFIG.STAKE_TIER_C_ETH);
+      const stakeWei = ethers.parseEther(S._stakeAmount);
       const tx = await S.contract.stakeETH(
-        S.enrollData.tier_uint8,
-        S.enrollData.deadline,
-        S.enrollData.reason_hash,
-        S.enrollData.signature,
         beneficiary,
         true,
         { value: stakeWei }

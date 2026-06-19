@@ -31,8 +31,6 @@ window.SAFU.init = (() => {
       if (el) el.textContent = count.toString();
 
       if (stake.amount > 0n && !stake.withdrawn) {
-        const tierMap = { 1: 'A', 2: 'B', 3: 'C' };
-        const tier    = tierMap[stake.tier] || stake.tier;
         const isOG    = Number(everStaked) <= 50;
         const daysSinceStake = Math.floor((Date.now() / 1000 - Number(stake.stakedAt)) / 86400);
         const penaltyLocked  = stake.penaltyLockedUntil > 0n
@@ -44,7 +42,7 @@ window.SAFU.init = (() => {
         if (box && content) {
           content.innerHTML =
             `> active stake found<br>` +
-            `> tier: ${tier} &nbsp;|&nbsp; amount: ${ethers.formatEther(stake.amount)} ETH<br>` +
+            `> amount: ${ethers.formatEther(stake.amount)} ETH &nbsp;|&nbsp; tier: assessed at claim<br>` +
             `> beneficiary: ${localStorage.getItem('safu_bene_' + S.walletAddress.toLowerCase()) || '[protected]'}<br>` +
             `> days staked: ${daysSinceStake}` +
             (isOG ? ' &nbsp;<span style="color:var(--cyan)">[ OG STAKER ]</span>' : '') +
@@ -53,6 +51,9 @@ window.SAFU.init = (() => {
           box.style.removeProperty('display');
           box.style.display = 'block';
         }
+
+        const amountInput = document.getElementById('input-amount');
+        if (amountInput) { amountInput.disabled = true; amountInput.placeholder = 'already staked'; }
 
         // Lock the entire stake form — one policy per wallet
         const connectBtn = document.getElementById('btn-stake-connect');

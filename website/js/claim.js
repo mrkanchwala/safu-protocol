@@ -38,7 +38,10 @@ window.SAFU.claim = (() => {
       const verdict = data.verdict;
 
       if (verdict === 'drain_detected') {
-        showStatus('status-scan', 'ok', `> score: ${score}/100\n> verdict: DRAIN DETECTED`);
+        const tier = data.tier || '—';
+        const entitlement = data.entitlement ? `${ethers.formatEther(BigInt(data.entitlement))} ETH` : '—';
+        showStatus('status-scan', 'ok',
+          `> score: ${score}/100\n> verdict: DRAIN DETECTED\n> tier: ${tier} &nbsp;|&nbsp; entitlement: ${entitlement}\n> tier will be assessed on claim submission`);
         S._pendingClaimTx    = txHash;
         S._pendingClaimScore = score;
         show('confirm-claim-section');
