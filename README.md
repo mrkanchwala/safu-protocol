@@ -2,7 +2,7 @@
 
 **System Assurances, F\*\*k You. Stake in SAFU.**
 
-Most staking gives you yield. SAFU staking gives you cover. Stake ETH, earn yield while you wait, and get protected against wallet hacks. If your wallet gets drained — phishing, approval exploit, key compromise — you get paid out. Deterministically. No human vote. No governance proposal. No waiting room.
+Stake ETH and get covered against wallet drains. If your wallet gets drained — phishing, approval exploit, key compromise — the contract pays you back automatically. Up to 15x your stake. No human vote. No governance proposal. No waiting room.
 
 [safustaking.com](https://safustaking.com)
 
@@ -10,64 +10,69 @@ Most staking gives you yield. SAFU staking gives you cover. Stake ETH, earn yiel
 
 ## How it works
 
-1. **Enroll** — your wallet is assessed by the SAFU oracle, which assigns your tier (A / B / C) and stake requirement.
-2. **Stake** — stake ETH. Your ETH is deployed to liquid staking to earn yield while your coverage is active. You can withdraw anytime — no lock period.
-3. **Accumulate points** — points accrue from day 1. Reach 9,000 points to become claim-eligible (approximately 90 days at base rate).
-4. **If you get hacked** — oracle submits the verified incident within 30 days of the hack. 9,000 points are burned, stake is forfeited, payout activates automatically. Streams to your beneficiary over 45 days. 2% daily cap, no exceptions.
+1. **Stake** — deposit any amount between 0.01 and 0.75 ETH. Permissionless — no oracle approval required. Set a beneficiary address for payouts.
+2. **Coverage activates** — your ETH is deployed to liquid staking. Withdraw anytime — no lock period.
+3. **Accumulate points** — points accrue proportionally to your stake amount from day 1. After 90 days staked, your wallet becomes claim-eligible.
+4. **If you get hacked** — oracle submits the verified incident within 30 days of the hack. Your tier is assessed at claim time. Stake is forfeited, payout streams to your beneficiary over 45 days.
 
 No committee. No vote. Same inputs, same output, every time.
 
 ---
 
-## Tier system
+## Coverage
 
-| Tier | Stake required | Max payout |
-|------|----------------|------------|
-| A    | 0.25 ETH       | 3.75 ETH   |
-| B    | 0.50 ETH       | 3.75 ETH   |
-| C    | 0.75 ETH       | 3.75 ETH   |
+Stake any amount between 0.01 and 0.75 ETH. Your tier is assessed at claim time based on your wallet's on-chain history — not at staking. Coverage scales proportionally:
 
-All tiers get the same max payout. Higher-risk wallets stake more collateral to earn the same coverage. DECLINE-flagged wallets are floored to tier C off-chain — no wallet is ever rejected at the contract level.
+| Tier | Coverage multiplier | Max payout (at 0.75 ETH stake) | Wallet profile |
+|------|--------------------|---------------------------------|----------------|
+| A    | 15x                | 11.25 ETH                       | Clean history, low risk signals |
+| B    | 10x                | 7.5 ETH                         | Mixed history, moderate signals |
+| C    | 5x                 | 3.75 ETH                        | Higher risk signals detected |
+
+Lower stakes get proportionally lower coverage: a 0.25 ETH Tier A stake covers up to 3.75 ETH.
 
 ---
 
 ## Points system
 
-Points accrue from `stakedAt`. Rate increases with commitment:
+Points accrue from `stakedAt`, proportional to stake amount: `(stake / 0.75) × rate/day`. Rate increases with commitment:
 
-| Days staked | Points/day |
-|-------------|-----------|
-| 0 – 89      | 100       |
-| 90 – 179    | 120       |
-| 180 – 364   | 150       |
-| 365+        | 200       |
+| Days staked | Base rate (points/day at max stake) |
+|-------------|-------------------------------------|
+| 0 – 89      | 100                                |
+| 90 – 179    | 120                                |
+| 180 – 364   | 150                                |
+| 365+        | 200                                |
 
-**9,000 points** are required to activate a claim. Points not burned on a claim are banked permanently in `pointsBalance` — they accumulate across all staking cycles and are never lost on withdrawal.
+A 0.25 ETH staker earns 1/3 the points of a 0.75 ETH staker. Points are banked permanently in `pointsBalance` — they accumulate across staking cycles and are never lost on withdrawal.
 
-**Pending claims (status 5):** If a hack is reported when the staker has fewer than 9,000 points, the claim is logged on-chain immediately but the stream activates once the staker reaches 9,000 points. The oracle must report the hack within 30 days of its occurrence — the 9,000-point accumulation may take longer.
+**Claim eligibility** is time-based: 90 days staked. Points are a loyalty and reward metric, not a claim gate.
+
+**Pending claims:** If a hack is reported when the staker has been staked for fewer than 90 days, the claim is logged on-chain immediately but the stream activates once the 90-day threshold is reached. The oracle must report the hack within 30 days of its occurrence.
 
 ---
 
 ## Payout controls
 
-- **`submitClaim`** — oracle or owner registers a verified loss. Auto-activates the payout stream. Stake is permanently forfeited at this point.
+- **`submitClaim`** — oracle registers a verified loss. Tier is assessed at claim time. Auto-activates the payout stream. Stake is permanently forfeited. Requires 2-of-2 cosigner attestation.
 - **`claimStream`** — pull-payment; claimant calls daily after the 7-day cooldown. 100% linear over 45 days.
-- **2% daily cap** — applies to `totalStakedSnapshot` at claim activation. No exemptions, including owner.
-- **Dynamic stress cap** — daily entitlement accepted shrinks automatically as pool utilisation rises: 25% of pool below 20% utilisation, 10% at 20–49%, 3% at ≥50%. At ≥50% utilisation, new claim submissions are blocked.
+- **Dynamic outflow cap** — daily payout cap scales with pool utilisation: 5%/day below 20% utilised, 3%/day at 20–49%, 1%/day at ≥50%. At ≥50% utilisation, new claim submissions are blocked.
 - **`cancelClaim` (F1)** — owner only. Cancels a false-positive claim. Stake is not returned — permanent forfeiture is the penalty design. Principal is restored to pool accounting; staker receives a 365-day withdrawal lock.
 - **`approveOverride` (F2)** — 2-of-2 owner + coSigner. Corrects false negatives or disputes.
 
 ---
 
-## SAFUPool v7 — Mainnet
+## SAFUPoolV8 — Mainnet
 
 | | |
 |---|---|
-| **Contract** | `[address published at deploy]` |
+| **Contract** | [`0xa170f0937DEc353C1806eaC0c3d559524d458641`](https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641) |
 | **Network** | Ethereum Mainnet |
-| **Verified source** | Etherscan + Sourcify |
-| **Compiler** | Solidity 0.8.25, optimizer 200 runs |
+| **Verified source** | Etherscan |
+| **Compiler** | Solidity 0.8.25, optimizer 100 runs |
 | **License** | BUSL-1.1 |
+| **Oracle** | AWS KMS (secp256k1, eu-north-1) — `0x5a648f7037F32817996fc12d660425b5B9B1BdFB` |
+| **CoSigner** | `0x6FeF81f9d01d62e0BE2879A2C07A4A8860064978` |
 
 ---
 
@@ -75,11 +80,12 @@ Points accrue from `stakedAt`. Rate increases with commitment:
 
 | File | What |
 |------|------|
-| `contracts/SAFUPoolV7.sol` | On-chain pool — staking, yield integration, payout stream, tier enforcement, points system |
+| `contracts/SAFUPoolV8.sol` | On-chain pool — proportional staking, permissionless enrollment, payout stream, tier-at-claim, points system |
 | `script/Deploy.s.sol` | Foundry deploy script — atomically deploys with oracle, coSigner, maxPool, treasury args |
 | `foundry.toml` | Compiler settings for reproducible builds |
-| `test/SAFUPoolV7.t.sol` | 161-test Foundry suite |
-| `test/SAFUPoolV7Halmos.t.sol` | Symbolic execution — 12 properties, zero counterexamples |
+| `test/SAFUPoolV8.t.sol` | 75-test Foundry suite |
+| `test/SmokeMainnetFork.t.sol` | 10-test mainnet fork smoke suite |
+| `website/` | safustaking.com static site — terminal aesthetic, WalletConnect, claim flow |
 
 The oracle scoring engine is off-chain and closed source. What's on-chain is the payout execution — auditable, deterministic, immutable.
 
@@ -89,45 +95,45 @@ The oracle scoring engine is off-chain and closed source. What's on-chain is the
 
 | Check | Result |
 |-------|--------|
-| Internal CSO audit (2026-06-13) | PASS — 0 CRITICAL / 0 HIGH / 4 MEDIUM fixed / 2 LOW fixed |
+| CSO + Slither audit (2026-06-18) | PASS — 0 CRITICAL / 0 HIGH / 0 MEDIUM / 0 LOW |
 | Halmos symbolic execution | 12/12 properties — zero counterexamples |
-| Foundry test suite | 161/161 PASS |
-| Hashlock AI audit | Pending (v7) |
+| Foundry test suite | 75/75 PASS |
+| Mainnet fork smoke test | 10/10 PASS |
 
-Previous Hashlock v6 report: https://aiaudit.hashlock.com/audit/890ab9ec-8311-423f-9bd1-7d4a3cce48f8
-
-**v7 CSO fixes (2026-06-13):**
-- `emergencyExit` now blocked when staker has an active or pending claim — prevents `totalAllocated` griefing during pause
-- Oracle and coSigner must be different keys — enforced at constructor, `setOracle`, and `setCoSigner`
-- `withdraw()` NatSpec corrected — v7 has no lock period
+Previous versions: [Hashlock v6 report](https://aiaudit.hashlock.com/audit/890ab9ec-8311-423f-9bd1-7d4a3cce48f8)
 
 ---
 
 ## Events — indexing notes
 
+- **`Staked`** — `(address indexed wallet, uint256 amount)`. No tier field — tier is assessed at claim time.
 - **`PointsEarned`** is indexed by `keccak256(beneficiary)`. Hash the beneficiary address before querying logs.
+- **`ClaimSubmitted`** includes `tier` — the tier assigned at claim time, not at staking.
 - **`YieldReceived`** fires on external ETH received. It does NOT fire on ETH returned from the internal swap path — those receipts are suppressed by the `_swapping` flag.
-- **`totalExtractedYield`** (state var): tracks ETH sent to treasury via `extractYield()` (net yield only) and `withdrawYield()` (total ETH withdrawn). The two callers record different amounts — use individual `YieldExtracted` and raw transfer events for precise per-call accounting.
 
 ---
 
 ## Known design decisions
 
-- **No lock period.** Stakers can withdraw anytime. Coverage is active from stake date. No time-lock on principal recovery.
-- **Stake forfeiture on claim (by design).** When `submitClaim` runs, the staker's principal is permanently forfeited regardless of claim outcome. A false-positive `cancelClaim` does not return the stake — forfeiture is the penalty, not a bug. Principal is restored to pool accounting; the 365-day withdrawal lock is the actual consequence.
-- **Oracle trust model.** The G9 enrollment cap (ensuring coverage_committed ≤ pool_TVL) is enforced oracle-side only. The contract has no on-chain guard for enrollment volume — the oracle is founder-controlled. This is an intentional design choice at current TVL. Disclosed here and in NatSpec.
-- **Pending claim window.** The 30-day claim window applies at `submitClaim` time only. A pending claim (status 5) logged within the window can be activated by `unlockPendingClaim` after the window expires — the oracle's on-chain verification at submit time is the authoritative gate.
-- **2-of-2 coSigner.** `coSigner != owner` and `coSigner != oracle` are enforced at constructor and `setCoSigner`. `oracle != coSigner` is also enforced at `setOracle`. `transferOwnership` enforces `newOwner != coSigner`. Both keys are required for `approveOverride` execution.
+- **Permissionless enrollment.** Any wallet can stake any amount in [0.01, 0.75] ETH. No oracle approval required. Tier is assessed at claim time by the oracle, not at staking.
+- **No lock period.** Stakers can withdraw anytime. Coverage is active from stake date.
+- **90-day time gate.** Claim eligibility requires 90 days staked. Points are a loyalty metric, not a claim gate.
+- **Stake forfeiture on claim (by design).** When `submitClaim` runs, the staker's principal is permanently forfeited regardless of claim outcome. A false-positive `cancelClaim` does not return the stake — forfeiture is the penalty, not a bug. 365-day withdrawal lock is the consequence.
+- **Proportional coverage.** Payout = `stake × tier_ratio × TIER_COVERAGE_BPS / 10_000`. With BPS at 10,000, payout = `stake × tier_ratio` exactly (15x/10x/5x).
+- **Dynamic outflow cap.** Replaces the flat 2%/day cap from v7. Scales with pool utilisation to protect solvency under stress.
+- **Oracle trust model.** The oracle is KMS-secured (AWS, secp256k1) and founder-controlled. Coverage cap enforcement is oracle-side only — the contract has no on-chain guard for enrollment volume. Intentional at current TVL, disclosed here and in NatSpec.
+- **2-of-2 coSigner.** `coSigner != owner` and `coSigner != oracle` enforced at constructor, `setCoSigner`, and `setOracle`. `transferOwnership` enforces `newOwner != coSigner`. Both keys required for `approveOverride`.
+- **2-of-2 claim attestation.** `submitClaim` requires both oracle signature and cosigner attestation with distinct prefixes. Single-key compromise cannot activate a payout.
 
 ---
 
 ## Risk disclosures
 
-**Liquid staking protocol dependency.** Staked ETH is deployed to a liquid staking protocol on deposit and unwound on withdrawal. A slashing event or depeg on the underlying liquid staking token means stakers may receive less ETH than their original principal on withdrawal. There is no on-chain mitigation for this at current TVL — accepted risk, disclosed here.
+**Liquid staking protocol dependency.** Staked ETH is deployed to Lido (wstETH) on deposit and unwound on withdrawal. A slashing event or depeg means stakers may receive less ETH than their original principal on withdrawal. No on-chain mitigation at current TVL — accepted risk.
 
-**Swap pool dependency.** Withdrawals route through an on-chain stETH/ETH swap pool to convert the liquid staking token back to ETH. If the swap pool is paused or severely imbalanced, `withdraw()` and `provideClaimLiquidity()` will revert until pool conditions normalise. There is no fallback swap path in v7 — this is a known limitation.
+**Swap pool dependency.** Withdrawals route through the Curve stETH/ETH pool. If the pool is paused or severely imbalanced, `withdraw()` will revert until pool conditions normalise. No fallback swap path in v8.
 
-**Centralisation.** `submitClaim`, `cancelClaim`, `setOracle`, `pause`, and `emergencyExit` are owner or oracle-controlled. At current stage, the protocol is founder-operated. Multi-sig upgrade is planned for production scale.
+**Centralisation.** `submitClaim`, `cancelClaim`, `setOracle`, `pause`, and `emergencyExit` are owner or oracle-controlled. Founder-operated at current stage. Multi-sig upgrade planned for production scale.
 
 ---
 
