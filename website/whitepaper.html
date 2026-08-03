@@ -82,16 +82,12 @@
       <span class="wp-nav-num">// 06</span>
       Economic Model
     </button>
-    <button class="wp-nav-btn" data-target="token">
-      <span class="wp-nav-num">// 07</span>
-      Points &amp; Token
-    </button>
     <button class="wp-nav-btn" data-target="roadmap">
-      <span class="wp-nav-num">// 08</span>
+      <span class="wp-nav-num">// 07</span>
       Roadmap
     </button>
     <button class="wp-nav-btn" data-target="legal">
-      <span class="wp-nav-num">// 09</span>
+      <span class="wp-nav-num">// 08</span>
       Legal
     </button>
   </aside>
@@ -135,9 +131,9 @@
         <h2>Abstract</h2>
       </div>
       <div class="wp-body">
-        <p>Every year, billions in crypto are drained from wallets through phishing attacks, stolen keys, and other hacks. The protocols designed to cover these losses require a committee to vote on your claim. Your payout depends on whether strangers with governance tokens believe you.</p>
-        <p><strong>SAFU removes the vote.</strong> The same event always produces the same payout calculation. When a drain is verified, a 7-day cooldown starts, then a 45-day payout stream begins. No committee, no quorum, no waiting room.</p>
-        <p>Stakers deposit any amount between 0.01 and 0.75 ETH to secure wallet coverage with no lock period. Coverage scales proportionally — up to 15x the staked amount. Stakers earn SAFU points while staked, convertible to SAFU tokens at network launch in Q1 2027.</p>
+        <p>Every year, billions in crypto are drained from wallets and protocols through phishing attacks, stolen keys, and other exploits. The protocols designed to cover these losses require a committee to vote on your claim, or don't cover wallet-level drains at all.</p>
+        <p><strong>SAFU gives protocols, wallets, and platforms the technology to socialize these losses deterministically</strong>, at the wallet level or the protocol level, with no premium and no vote. The same event always produces the same payout calculation. When a drain is verified, a 7-day cooldown starts, then a 45-day payout stream begins.</p>
+        <p>SAFUPoolV8 is live on Ethereum mainnet, with a Stellar testnet deployment carrying 184 passing tests. A protocol can deploy this same engine under its own brand, giving its own users deterministic coverage without building a claims system from scratch.</p>
         <p>This document describes how the protocol works, how the economics hold, and where it is heading.</p>
       </div>
     </div>
@@ -149,7 +145,7 @@
         <h2>The Problem</h2>
       </div>
       <div class="wp-body">
-        <p>Wallet-level drain is the most consistent attack surface in crypto. Phishing attacks, stolen keys, and malicious approvals collectively account for billions in annual losses. Existing smart contract coverage products protect against code failures, not these. Wallet drains fall through every existing coverage category.</p>
+        <p>Wallet-level drain is the most consistent attack surface in crypto. Trust Wallet's Chrome extension breach on December 24, 2025 drained thousands of wallets for millions of dollars within hours of a compromised update reaching users. Security losses held at $972 million across 207 incidents in the first half of 2026 alone, even as DeFi's total value locked fell 38 percent, so the underlying risk did not shrink with the market around it.</p>
       </div>
 
       <div class="wp-grid">
@@ -169,11 +165,11 @@
 
       <div class="wp-body">
         <h3>Existing protocols don't cover this</h3>
-        <p>Nexus Mutual, InsurAce, and Sherlock cover smart contract bugs, which are protocol-level failures where code behaves unexpectedly. A wallet drain is a different event entirely, and none of these protocols pay out on it.</p>
+        <p>Nexus Mutual settles claims by member vote, and its tracked value has fallen from about $800 million in 2022 to roughly $100 to 200 million today. InsurAce's value locked has dropped to $133,106 from a roughly $55 to 58 million peak, and Unslashed Finance's has fallen to $2.79 million from a roughly $170 to 180 million peak. None of these operate at the wallet level, and none let a business run the mechanism itself.</p>
         <p>For the protocols that do attempt wallet-level coverage, every claim goes to a vote. Your payout depends on DAO participation rates you didn't choose. The result is slow, unpredictable, and discretionary.</p>
 
         <h3>The agent gap</h3>
-        <p>AI agents managing capital on hot wallets cannot exercise human judgment. Coverage for these wallets is not optional. It is a runtime dependency, the same way gas is. No existing product serves this segment. SAFU builds the API that does.</p>
+        <p>AI agents managing capital on hot wallets cannot exercise human judgment. Coverage for these wallets is a runtime dependency, the same way gas is. Four major wallet providers, MetaMask, Coinbase, OKX, and BNB Chain, shipped agent-specific wallets within a single month in 2026. No existing coverage product serves this segment.</p>
       </div>
     </div>
 
@@ -184,8 +180,9 @@
         <h2>What SAFU Is</h2>
       </div>
       <div class="wp-body">
-        <p>SAFU is a protocol that pays out when your wallet gets drained. The payout is calculated by code, and the same drain event always produces the same result, so there is nothing to argue about and no one to petition.</p>
+        <p>SAFU gives protocols, wallets, and platforms the technology to socialize losses deterministically, whether the loss hits an individual wallet or the protocol itself. The payout is calculated by code, and the same drain event always produces the same result, so there is nothing to argue about and no one to petition.</p>
         <p>The protocol runs a fraud scanner against every submitted transaction hash. The scanner scores the transaction for drain patterns: sweep completeness, receiver classification, automation signals. That score, combined with the staker's tier and policy terms, produces one output: an entitlement amount, or a rejection reason.</p>
+        <p>A protocol can deploy this same engine under its own brand, giving its own users deterministic coverage without building a claims system from scratch.</p>
       </div>
 
       <div class="wp-callout">
@@ -333,6 +330,7 @@
         <h3>Oracle and wallet safety</h3>
         <p>The payout oracle signing key is held in AWS KMS (secp256k1, eu-north-1), isolated from the server runtime. All signed messages include the contract address and chain ID, which prevents replay attacks. A 2-of-2 override mechanism (owner + co-signer, separate keys) handles disputes without bypassing rate limits.</p>
         <p>Staking sends ETH to the pool and grants no token approvals and no spending permissions. The contract cannot access any other asset in your wallet, before, during, or after staking.</p>
+        <p>The fraud scanner is being expanded into a chain-parity module covering Ethereum, Solana, and Stellar detection patterns under one scoring backend, so the same engine that scores Ethereum drains today becomes the mechanism for every future chain SAFU deploys to, rather than a separate scanner per chain.</p>
       </div>
     </div>
 
@@ -343,7 +341,7 @@
         <h2>Economic Model</h2>
       </div>
       <div class="wp-body">
-        <p>The staking pool is ETH-only. Claims are paid from this pool. A dynamic outflow cap (5%/3%/1% per day by tier) and 45-day vesting period ensure no single event can drain it.</p>
+        <p>The Ethereum staking pool is ETH-only; each chain's pool is denominated in that chain's own native asset. Claims are paid from this pool. A dynamic outflow cap (5%/3%/1% per day by tier) and 45-day vesting period ensure no single event can drain it.</p>
         <p>The initial deployment is a test pool designed to stress-test the system under real conditions. Coverage caps are small by design. Production economics require a larger pool and higher stake amounts, scoped for Q3 2026.</p>
 
         <h3>Revenue streams</h3>
@@ -361,112 +359,64 @@
           <div class="wp-card-status">● planned Q3 2026</div>
         </div>
         <div class="wp-card">
-          <div class="wp-card-title">[ custom pool deployments ]</div>
-          <div class="wp-card-body">Communities and protocols deploy their own SAFU pool with custom coverage rules and tier logic. SAFU earns a protocol fee on each pool.</div>
-          <div class="wp-card-status">● planned Q3 2026</div>
-        </div>
-        <div class="wp-card">
-          <div class="wp-card-title">[ verify api ]</div>
-          <div class="wp-card-body">Per-call fee for enterprise and agent integrations. Scoped after first customer cohort is onboarded.</div>
+          <div class="wp-card-title">[ whitelabel pool deployments ]</div>
+          <div class="wp-card-body">Protocols deploy their own SAFU-powered pool under their own brand, reusing the same audited engine live on Ethereum. SAFU earns a fee on each deployment.</div>
           <div class="wp-card-status">● planned Q3 2026</div>
         </div>
       </div>
 
       <div class="wp-body">
         <h3>Why stake?</h3>
-        <p>Stakers provide the pool capital that makes coverage possible. In return: wallet-drain protection while staked, with the ability to withdraw anytime. SAFU points accrue at accelerating rates the longer you stay, and convert to SAFU tokens at network launch. Principal is returned when you withdraw if no claim is filed.</p>
+        <p>Stakers provide the pool capital that makes coverage possible. In return: wallet-drain protection while staked, with the ability to withdraw anytime if no claim is filed. Principal is returned in full when you withdraw without claiming.</p>
       </div>
     </div>
 
-    <!-- 07 TOKEN -->
-    <div class="wp-slide" id="token">
-      <div class="wp-slide-header">
-        <div class="section-label">// 07</div>
-        <h2>SAFU Points and Token</h2>
-      </div>
-
-      <div class="wp-callout wp-callout-red">
-        <p>No token exists today. No token is being offered. This section describes the intended design, subject to legal review before implementation.</p>
-      </div>
-
-      <div class="wp-body">
-        <h3>How points work</h3>
-        <p>Every staker earns SAFU points proportional to their stake amount, at accelerating rates: (stake/0.75) × 100/day for the first 90 days, then 120, 150, and 200/day after a year. Points are non-transferable and accumulate across staking cycles.</p>
-        <p>When a claim is filed, 9,000 points are burned and any remainder is banked permanently. The payout flows normally. Stakers who withdraw without claiming retain all points and convert them to tokens at launch.</p>
-
-        <h3>Tokens and payouts are mutually exclusive</h3>
-        <p>A staker either files a claim and gets the payout (burning their points), or holds to full term and gets their tokens (principal returned). There is no path to collecting both. This removes the moral hazard present in most DeFi token designs.</p>
-
-        <h3>What the token does</h3>
-      </div>
-
-      <div class="wp-grid">
-        <div class="wp-card">
-          <div class="wp-card-title">[ governance ]</div>
-          <div class="wp-card-body">Vote on protocol parameters: coverage caps, yield allocation, policy terms. Token holders are structurally honest stakers who never extracted from the pool.</div>
-        </div>
-        <div class="wp-card">
-          <div class="wp-card-title">[ pool backstop ]</div>
-          <div class="wp-card-body">Token holders can stake tokens to provide additional coverage capacity, earning a share of protocol revenue in return.</div>
-        </div>
-        <div class="wp-card">
-          <div class="wp-card-title">[ revenue share ]</div>
-          <div class="wp-card-body">A portion of Lido yield and forfeiture revenue distributes to token stakers.</div>
-        </div>
-      </div>
-
-      <div class="wp-body">
-        <h3>Why the token is not a security</h3>
-        <p>Coverage is the primary product. The token is a byproduct of honest participation in that product, not an investment in a profit-sharing enterprise. You stake to get wallet protection. At launch, accumulated points convert to tokens that give you a voice in how the protocol runs.</p>
-        <p>There is no ICO, no presale, no token being sold. Tokens only reach wallets that provided coverage capacity and did not extract from the pool. Tokenomics, supply, and allocation are Q4 2026 work, subject to full legal review.</p>
-      </div>
-    </div>
-
-    <!-- 08 ROADMAP -->
+    <!-- 07 ROADMAP -->
     <div class="wp-slide" id="roadmap">
       <div class="wp-slide-header">
-        <div class="section-label">// 08</div>
+        <div class="section-label">// 07</div>
         <h2>Roadmap</h2>
       </div>
       <div class="step">
-        <span class="step-num">Q2 2026</span>
+        <span class="step-num">01</span>
         <div class="step-content">
-          <div class="step-title">Low-value mainnet live</div>
-          <div class="step-desc">SAFUPoolV8 deployed on Ethereum mainnet with proportional staking (0.01–0.75 ETH), permissionless enrollment, KMS oracle signing, and points system. First staker cohort onboarded. Whitepaper published.</div>
+          <div class="step-title">Ecosystem integration</div>
+          <div class="step-desc">Grant-funded deployment and audit on each chain builds the credibility SAFU needs before any protocol on it will trust it. Stellar's build is already in motion under SCF #44, with the funded audit and mainnet deploy following as that grant's remaining tranches close.</div>
         </div>
       </div>
       <div class="step">
-        <span class="step-num">Q3 2026</span>
+        <span class="step-num">02</span>
         <div class="step-content">
-          <div class="step-title">Seed fundraise + high-value vault</div>
-          <div class="step-desc">Lido wstETH integration, higher coverage caps, agent wallet tier engine, new contract audit. SAFU Verify API launched. Custom pool deployments open for communities and protocols.</div>
+          <div class="step-title">Whitelabel pools</div>
+          <div class="step-desc">The whitelabel deployment package gets productized, reusing the same contracts and backend already live on Ethereum. A first pilot partner signs, and two to three additional deployments follow, targeting DAO treasuries specifically.</div>
         </div>
       </div>
       <div class="step">
-        <span class="step-num">Q4 2026</span>
+        <span class="step-num">03</span>
         <div class="step-content">
-          <div class="step-title">Community + token design</div>
-          <div class="step-desc">Community building. SAFU Points season opens to public staking. Token design finalised and legal-reviewed. Exchange and market maker conversations begin.</div>
+          <div class="step-title">Case study and referral motion</div>
+          <div class="step-desc">First case study published using a live partner's real usage data. Formal ecosystem and partner referral motion begins.</div>
         </div>
       </div>
-      <div class="step">
-        <span class="step-num">Q1 2027</span>
-        <div class="step-content">
-          <div class="step-title">Token launch</div>
-          <div class="step-desc">SAFU Token launch. Points-to-token conversion window. DEX listing. Protocol governance goes live.</div>
-        </div>
+
+      <div class="wp-body" style="margin-top:2.5rem;">
+        <h3>Model 2 — B2C pools (deferred)</h3>
+        <p>Longer term, once ecosystem integration and whitelabel pools produce real traction, SAFU intends a dedicated push into direct consumer reach for the same pool individuals and agents can already stake into today.</p>
+
+        <h3>Model 3 — SAFU Audit protocol pools (deferred)</h3>
+        <p>Longer term, SAFU intends to extend the same deterministic model to protocols themselves, admitting a protocol into a coverage pool after SAFU's own team reviews its code, in place of the audit fee protocols pay today. No token exists today, and one would only be introduced if Model 2 or Model 3 materialize.</p>
       </div>
     </div>
 
-    <!-- 09 LEGAL -->
+    <!-- 08 LEGAL -->
     <div class="wp-slide" id="legal">
       <div class="wp-slide-header">
-        <div class="section-label">// 09</div>
+        <div class="section-label">// 08</div>
         <h2>Legal</h2>
       </div>
       <div class="wp-body">
         <p>SAFU is not a financial product, insurance product, or investment contract. The protocol provides a deterministic verification service. Coverage depends on fraud scanner output and verification pipeline evaluation. No payout is guaranteed.</p>
-        <p>SAFU tokens, when issued, are utility tokens. They confer governance rights and access to protocol functions. They are not securities under any jurisdiction. This assertion does not constitute legal advice.</p>
+        <p>No SAFU token exists today, and none is being offered. If one is introduced alongside the deferred models described in the Roadmap, it would be a utility token conferring governance rights and access to protocol functions, not a security under any jurisdiction. This assertion does not constitute legal advice.</p>
         <p>This whitepaper is for informational purposes only. Nothing in it constitutes a solicitation, offer, or commitment to enter any transaction.</p>
         <p>Protocol operates under BUSL-1.1 license. Source: <a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">github.com/mrkanchwala/safu-protocol ↗</a></p>
         <p style="margin-top:3rem;font-size:0.7rem;color:var(--dim);border-top:1px solid var(--border);padding-top:1.5rem;">
