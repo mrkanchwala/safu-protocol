@@ -143,6 +143,10 @@ window.CONFIG = {
       // the key (see stellar's mevChainNote) rather than inheriting
       // Ethereum's specifics.
       walletsLine: 'MetaMask, Rabby, Rainbow, Trust, Safe — any EIP-1193 compatible wallet.',
+      // 2026-08-19: was a static HTML default ("0x... beneficiary address")
+      // that rendered under Stellar too, whose addresses are never 0x-shaped.
+      // Config-driven now, same reasoning as walletsLine two lines up.
+      beneficiaryPlaceholder: '0x... beneficiary address',
       // Trusted HTML — developer-authored, not user input. <strong> is safe
       // to interpolate directly (same trust basis as loader()'s <span>).
       claimIdHint: 'Claim ID is emitted in the <strong>ClaimActivated</strong> event on Etherscan.',
@@ -298,8 +302,16 @@ window.CONFIG = {
       // would be an inaccurate disclosure — worse than none.
       disclosures: [],
 
-      // See the matching Ethereum comment for why these exist.
-      walletsLine: 'Freighter — the official Stellar wallet extension.',
+      // See the matching Ethereum comment for why these exist. Updated
+      // 2026-08-19 alongside the connector-stellar.js rewrite — Freighter was
+      // the only supported wallet when this line was first written; now 7
+      // are, so a Freighter-only sentence would itself be the same class of
+      // stale/wrong claim this file exists to prevent for chain-substituted
+      // strings.
+      walletsLine: 'Freighter, xBull, Albedo, Rabet, Lobstr, Hana, Hot Wallet, or any other supported Stellar wallet.',
+      // G... is an account strkey — the correct shape for a beneficiary
+      // (contracts use C..., not the intended target here).
+      beneficiaryPlaceholder: 'G... beneficiary address',
       // Verified against contracts/protection-pool/src/claim.rs in
       // safu-soroban (2026-08-19): Soroban has NO `ClaimActivated` event —
       // the nearest equivalent is `ClaimSubmitted`, emitted with claim_id as

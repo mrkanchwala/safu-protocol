@@ -9,8 +9,10 @@ window.SAFU.init = (() => {
   // chain selected it would have rendered Ethereum's count under that chain's
   // label — a plausible-looking wrong number, which is worse than the em-dash.
   async function loadStakerCount() {
+    const gen = window.SAFU.chainGeneration();
     try {
       const count = await window.SAFU.adapter().readTotalStakers();
+      if (gen !== window.SAFU.chainGeneration()) return;  // a newer chain switch superseded this read
       const el = document.getElementById('stat-stakers');
       if (el) el.textContent = String(count);
     } catch { /* display-only, safe to leave as the em-dash placeholder */ }
@@ -21,9 +23,11 @@ window.SAFU.init = (() => {
   // and stake.js's validator. CONFIG.STAKE_MIN_ETH/STAKE_MAX_ETH existed but
   // were referenced nowhere, so the config was decorative at this point.
   async function loadStakeBounds() {
+    const gen = window.SAFU.chainGeneration();
     try {
       const a = window.SAFU.adapter();
       const bounds = await a.readStakeBounds();
+      if (gen !== window.SAFU.chainGeneration()) return;  // a newer chain switch superseded this read
       if (!bounds) return;   // chain cannot answer — chain-ui's config pass stands
       const { min, max } = bounds;
       const sym = a.assetSymbol;
@@ -72,6 +76,11 @@ window.SAFU.init = (() => {
   // the adapter is what reconciles that.
   async function loadStakeStatus() {
     if (!S.walletAddress) return;
+    const gen  = window.SAFU.chainGeneration();
+    const addr = S.walletAddress;  // same-chain wallet A→B reconnect isn't a
+                                    // chain-generation bump — capture the
+                                    // address too so that race is caught as
+                                    // well, not just a chain switch.
     try {
       const a = window.SAFU.adapter();
       const [rec, count, everStaked] = await Promise.all([
@@ -79,6 +88,10 @@ window.SAFU.init = (() => {
         a.readTotalStakers(),
         a.readTotalEverStaked(),
       ]);
+      // A newer chain switch, disconnect, OR reconnect to a different wallet
+      // superseded this read — writing its result now would render one
+      // wallet's stake record under another wallet's connected state.
+      if (gen !== window.SAFU.chainGeneration() || addr !== S.walletAddress) return;
 
       const el = document.getElementById('stat-stakers');
       if (el) el.textContent = String(count);

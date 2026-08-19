@@ -45,14 +45,6 @@ window.SAFU.wallet = (() => {
     return btn;
   }
 
-  function _hint(text) {
-    const p = document.createElement('p');
-    p.className = 'note';
-    p.style.marginBottom = '1rem';
-    p.textContent = text;
-    return p;
-  }
-
   // ── page-level chain picker (hero) ──────────────────────────────────────
   // Primary chain selection. Built dynamically over CHAIN_ORDER, same
   // scalability rule as the modal's own switcher below — a new chain is one
@@ -192,31 +184,54 @@ window.SAFU.wallet = (() => {
   });
 
   // ── step 2: wallet ─────────────────────────────────────────────────────
+  //
+  // Two fixes landed here together 2026-08-19, same root cause:
+  //
+  // 1. RACE: this function is async and re-entrant on every chain switch, but
+  // had no staleness check — switch chains twice quickly and a slower older
+  // render (Stellar's real network script-load) can finish AFTER a faster
+  // newer one (EVM's near-instant check) and silently overwrite it. Reported
+  // as "the WalletConnect button disappears / does nothing / sometimes
+  // works" on rapid switching. Fixed with the same shared generation token
+  // `chain.js` now exposes for exactly this class of bug (also used in
+  // init.js's stake-bounds/staker-count/stake-status reads).
+  //
+  // 2. SHAPE: every non-option message used to render via `_hint()` (a bare
+  // `<p>`, no border) while a real option used `_optionBtn()` (a bordered
+  // button) — so the modal's step-2 container visibly changed shape based on
+  // state, not just content. Every state below now renders through
+  // `_optionBtn(text, '', null)`, which `_optionBtn` already renders as a
+  // disabled bordered button (existing code path, previously unused for
+  // this) — so the container is the same shape whether it holds a real
+  // wallet, a loading message, or an error.
   async function _renderWallets() {
     const list = document.getElementById('wallet-list');
     if (!list) return;
+    const gen = window.SAFU.chainGeneration();
     list.innerHTML = '';
 
     const conn = _connector();
     if (!conn) {
-      list.appendChild(_hint(`No wallet support is wired for ${window.SAFU.chain().label} yet.`));
+      list.appendChild(_optionBtn(`No wallet support is wired for ${window.SAFU.chain().label} yet.`, '', null));
       return;
     }
 
-    list.appendChild(_hint('checking for wallets…'));
+    list.appendChild(_optionBtn('checking for wallets…', '', null));
     let options = [];
     try {
       await conn.ensureDeps();
       options = await conn.options();
     } catch (e) {
+      if (gen !== window.SAFU.chainGeneration()) return;  // a newer switch superseded this render
       list.innerHTML = '';
-      list.appendChild(_hint(`Could not load wallet support: ${e.userMessage || e.message}`));
+      list.appendChild(_optionBtn(`Could not load wallet support: ${e.userMessage || e.message}`, '', null));
       return;
     }
+    if (gen !== window.SAFU.chainGeneration()) return;  // a newer switch superseded this render
     list.innerHTML = '';
 
     if (!options.length) {
-      list.appendChild(_hint(conn.emptyHint || 'No wallet found for this chain.'));
+      list.appendChild(_optionBtn(conn.emptyHint || 'No wallet found for this chain.', '', null));
       return;
     }
     options.forEach(o => list.appendChild(_optionBtn(o.name, o.tag, () => _run(o))));

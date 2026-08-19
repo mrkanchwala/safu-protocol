@@ -119,14 +119,6 @@
 <!-- ── HERO ─────────────────────────────────────────────────────── -->
 <section class="hero">
   <div class="container">
-    <!-- Page-level chain picker + persistent testnet band (founder decision,
-         2026-08-19) — supersedes the in-modal-only switcher below. Clicking
-         either button reshapes the hero and every chain-scoped section. The
-         wallet modal's own chain step (below) still confirms the active
-         chain at connect time — this is not a replacement for that, it's the
-         PRIMARY way a visitor picks a chain before ever opening the modal. -->
-    <div class="chain-picker" id="chain-picker"></div>
-    <div class="testnet-band d-none" id="testnet-band"></div>
     <h1>
       System Assurances,<br>
       F<span class="red">**</span>K YOU<span class="red">.</span><br>
@@ -134,13 +126,24 @@
     </h1>
     <p class="hero-sub">
       Your exchange had assurances and your wallet provider had guarantees, and when your wallet got drained anyway, neither one paid you back.<br>
-      Put in a small amount of <span class="js-asset">ETH</span> and get covered for up to fifteen times that, and if your wallet gets drained the contract pays you back automatically with <strong>no claim form, no committee, and no one deciding whether you deserve it.</strong>
+      Stake a small amount into the pool and get covered for up to fifteen times what you put in, and if your wallet gets drained the contract pays you back automatically with <strong>no claim form, no committee, and no one deciding whether you deserve it.</strong>
     </p>
     <div class="hero-actions">
       <button class="btn btn-cyan" id="btn-hero-stake">[ stake now ]</button>
       <button class="btn btn-dim"  id="btn-hero-learn">[ learn more ]</button>
       <a href="/whitepaper.html" target="_blank" rel="noopener noreferrer" class="btn btn-red">[ whitepaper ]</a>
     </div>
+    <!-- Page-level chain picker + persistent testnet band (founder decision,
+         2026-08-19; relocated 2026-08-19 to sit below the hero rather than
+         above it — was competing with the headline for the page's first
+         impression, and this is where the chain-scoped numbers it controls
+         actually start changing). Clicking either button reshapes this hero
+         and every chain-scoped section below. The wallet modal's own chain
+         step still confirms the active chain at connect time — this is not a
+         replacement for that, it's the PRIMARY way a visitor picks a chain
+         before ever opening the modal. -->
+    <div class="chain-picker" id="chain-picker"></div>
+    <div class="testnet-band d-none" id="testnet-band"></div>
   </div>
 </section>
 
@@ -477,6 +480,7 @@
   <div class="container">
     <div class="section-label"><span>//</span> 06 — team</div>
     <h2>Who built this</h2>
+    <div class="team-grid">
     <div class="team-card">
       <div class="team-name">Murtaza Kanchwala</div>
       <div class="team-role">Co-founder</div>
@@ -502,6 +506,7 @@
           linkedin ↗
         </a>
       </div>
+    </div>
     </div>
   </div>
 </section>

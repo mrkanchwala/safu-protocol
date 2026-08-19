@@ -9,10 +9,11 @@
 | `stellar-sdk.min.js` | `@stellar/stellar-sdk` | 16.2.0 | `StellarSdk` | 472 KB | Apache-2.0 | `c872bee0e34302f812bcb404580f288cf3d434efeee3d40755d4024d74982fd0` |
 | `freighter-api.min.js` | `@stellar/freighter-api` | 6.0.1 | `freighterApi` | 10 KB | Apache-2.0 | `d797429cf97f9a67f1999910830a89dc01d565aedebafb651a11b1ed003a7e9d` |
 | `wc-provider.bundle.js` | `@walletconnect/ethereum-provider` | 2.19.2 | ES module export (`EthereumProvider`) | 599 KB (613,619 bytes) | Apache-2.0 | `b7b4aa997065450f33c2b647339c4b0a81921346e4db3655d7c39def362027d6` |
+| `stellar-wallets-kit.bundle.js` | `@creit.tech/stellar-wallets-kit` | 2.5.0 (7 modules only) | `SAFUStellarWalletModules` (IIFE) | 440 KB (450,677 bytes) | MIT | `ae49d0df2f393beec1e10e809b8599721b9e0577e6686fbb86bc4eddb95a2f06` |
 
-Both Stellar packages are published by the Stellar Development Foundation (`github.com/stellar/js-stellar-sdk`, `github.com/stellar/freighter`) and **already ship prebuilt UMD browser bundles**, so no bundler is involved at any point. This was the deciding factor in choosing them over the third-party Stellar Wallets Kit (`@creit.tech/stellar-wallets-kit`, MIT), which would have required an `npm install` plus an esbuild step to produce an equivalent artifact.
+`stellar-sdk.min.js` and `freighter-api.min.js` are published by the Stellar Development Foundation (`github.com/stellar/js-stellar-sdk`, `github.com/stellar/freighter`) and **already ship prebuilt UMD browser bundles**, so no bundler is involved for either.
 
-SCF #44's D3 deliverable text names "Freighter / Stellar Wallets Kit", so the official Freighter path satisfies it. Stellar Wallets Kit remains the option to revisit if multi-wallet support (xBull, Albedo, Rabet, Lobstr, Hana) becomes a requirement — that is a deliberate future trade of an official-only dependency chain for wallet breadth, not an oversight.
+**`stellar-wallets-kit.bundle.js` is the exception — 2026-08-19, superseding the "Freighter-only, revisit if multi-wallet breadth is required" decision recorded here until this date.** SCF #44's D3 text names "Freighter / Stellar Wallets Kit" either as satisfying the deliverable; multi-wallet breadth became a real user requirement, not a hypothetical, so the trade was made. See its own section below.
 
 ## Updating a bundle
 
@@ -72,3 +73,41 @@ shasum -a 256 wc-provider.bundle.js   # record in the table above
 Verify functionally before shipping — `node -e "import('./wc-provider.bundle.js').then(m => console.log(typeof m.EthereumProvider.init))"` should print `function`. Check `npm audit` AND grep the actual bundled output for any flagged package name — the lockfile lists what's installed, not what's shipped to the browser (Node-only deps like `ws`/`axios` commonly resolve to inert browser stubs via the `browser` package.json field and never reach the real vulnerable code).
 
 **Still open:** this rebuild has not had its manual human WalletConnect click-through test yet (founder-mandated sign-off gate — headless Chromium cannot drive a wallet extension). Old file preserved at `website/js/wc-provider.bundle.js.bak-pre-2.19.2-rebuild` for rollback.
+
+## `stellar-wallets-kit.bundle.js` — built 2026-08-19, 7 of the kit's ~19 wallet modules only
+
+**Why not the whole kit.** `@creit.tech/stellar-wallets-kit` bundles hardware-wallet SDKs (Ledger, Trezor), several exchange wallets (Klever, OneKey, Bitget), and — critically — its `wallet-connect.module.js` pulls in `@reown/appkit`, the exact dependency `wc-provider.bundle.js` above was rebuilt at 2.19.2 specifically to avoid. Its `./components` export also ships a full UI widget built on Preact + a Tailwind-runtime (Twind) — a second UI framework this site does not use anywhere else. None of that is imported here.
+
+**What's actually in the bundle:** only the SDK-level classes for Freighter, xBull, Albedo, Rabet, Lobstr, Hana, and Hot Wallet — each implementing the kit's uniform `ModuleInterface` (`isAvailable`/`getAddress`/`signTransaction`/`getNetwork`). No `StellarWalletsKit` static class, no `./components`, no WalletConnect module. `website/js/connector-stellar.js` wires these 7 modules directly into this site's own existing `.wallet-option` modal — not the kit's UI.
+
+**Stellar WalletConnect deliberately excluded**, not an oversight — same AppKit-bloat problem as EVM's WalletConnect, plus it would mean a second, separate WC session running alongside the EVM one. Revisit only as its own scoped decision, not bundled into a wallet-breadth pass.
+
+**Build command:**
+```bash
+mkdir /tmp/swk-build && cd /tmp/swk-build
+npm init -y && npm install @creit.tech/stellar-wallets-kit@2.5.0 --no-save
+cat > entry.js <<'EOF'
+import { FreighterModule } from '@creit.tech/stellar-wallets-kit/modules/freighter';
+import { xBullModule }     from '@creit.tech/stellar-wallets-kit/modules/xbull';
+import { AlbedoModule }    from '@creit.tech/stellar-wallets-kit/modules/albedo';
+import { RabetModule }     from '@creit.tech/stellar-wallets-kit/modules/rabet';
+import { LobstrModule }    from '@creit.tech/stellar-wallets-kit/modules/lobstr';
+import { HanaModule }      from '@creit.tech/stellar-wallets-kit/modules/hana';
+import { HotWalletModule } from '@creit.tech/stellar-wallets-kit/modules/hotwallet';
+export const modules = {
+  freighter: new FreighterModule(), xbull: new xBullModule(), albedo: new AlbedoModule(),
+  rabet: new RabetModule(), lobstr: new LobstrModule(), hana: new HanaModule(),
+  hotwallet: new HotWalletModule(),
+};
+EOF
+npx esbuild entry.js --bundle --format=iife --global-name=SAFUStellarWalletModules --minify \
+  --platform=browser --define:global=globalThis \
+  --outfile=stellar-wallets-kit.bundle.js
+shasum -a 256 stellar-wallets-kit.bundle.js   # record in the table above
+```
+
+`--define:global=globalThis` is required — without it the bundle throws `global is not defined` in a real browser (some of the kit's internal deps assume a Node-style `global`). `window.SAFUStellarWalletModules.modules` is the object each module lives on (esbuild's `--global-name` nests a single named export under that key, it does not flatten it to the top-level global).
+
+**Verified via real Chromium (Playwright), not Node** — same reasoning as `adapter-stellar.test.mjs`'s existing real-SDK-bundle policy: a Node shim can't reproduce real browser globals these modules depend on internally, and did in fact throw a false `Cannot read properties of undefined` error when first tried in bare Node. Confirmed: all 7 modules load, expose the full interface, correct product names (`Freighter`, `xBull`, `Albedo`, `Rabet`, `LOBSTR`, `Hana Wallet`, `HOT Wallet`). Grepped the built output for `reown`, `appkit`, `ledger`, `trezor`, `@walletconnect` — all zero occurrences, confirming tree-shaking excluded them without needing to trust it.
+
+**Known timing asymmetry, live-tested with no extensions installed:** Freighter and Lobstr's `isAvailable()` hang past the kit's own documented 1000ms contract; xBull and Albedo correctly resolve `true` with nothing installed (both have a web-based/PWA path needing no extension — real availability, not a bug). `connector-stellar.js`'s `_isAvailable()` wraps every check in a 1200ms race so a slow module cannot stall the wallet list — see that file for the fix.

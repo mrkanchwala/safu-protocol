@@ -88,21 +88,34 @@ await ta('a failed load is not cached — a retry actually retries', async () =>
   await rejects(p2);
 });
 
-// ── connector-stellar: freighter returns errors, it does not throw ──────────
+// ── connector-stellar: multi-wallet via Stellar Wallets Kit modules ─────────
+//
+// 2026-08-19: connector-stellar.js was rewritten from a hand-rolled
+// Freighter-only implementation (window.freighterApi, which RETURNS its
+// errors rather than throwing) to 7 kit modules under
+// window.SAFUStellarWalletModules.modules, each implementing the kit's own
+// ModuleInterface — getAddress()/signTransaction()/getNetwork() THROW on
+// failure rather than returning {error}. Every test below now mocks that
+// shape. The safety properties being tested (reject on no address, check the
+// PASSPHRASE not the label, verify the signer matches, refuse cross-family
+// use) are unchanged — this rewrite generalized them across modules, it did
+// not relax any of them.
 
 const CONN = window.SAFU.connectors.stellar;
 const ACC  = 'GCZOUSNCY4TRCPQHP4IN2JEF4TVUMKGAZ6HNUXKIUWPMZJHJ7RA7A2UD';
 const ACC2 = 'GCNLC5XTHKJVBUDZFCZDNVPIZFWPEIH7DPQICXUNINUTLIY6TG4JJDXL';
 const PASS = 'Test SDF Network ; September 2015';
 
-function mockFreighter(overrides) {
-  window.freighterApi = Object.assign({
-    isConnected:     async () => ({ isConnected: true }),
-    requestAccess:   async () => ({ address: ACC }),
-    getNetwork:      async () => ({ network: 'TESTNET', networkPassphrase: PASS }),
+function mockModule(overrides) {
+  const mod = Object.assign({
+    productName:  'Freighter',
+    isAvailable:  async () => true,
+    getAddress:   async () => ({ address: ACC }),
+    getNetwork:   async () => ({ network: 'TESTNET', networkPassphrase: PASS }),
     signTransaction: async () => ({ signedTxXdr: 'AAA=', signerAddress: ACC }),
   }, overrides);
-  window.freighter = true;
+  window.SAFUStellarWalletModules = { modules: { freighter: mod } };
+  return mod;
 }
 
 function connectOption() {
@@ -113,15 +126,16 @@ function connectOption() {
 }
 
 await ta('a rejected access request THROWS instead of connecting with an empty address', async () => {
-  // freighter resolves { address: '', error } — a try/catch-only connector
-  // would treat this as success and connect nobody.
-  mockFreighter({ requestAccess: async () => ({ address: '', error: { message: 'User declined' } }) });
+  // Kit modules throw on a declined permission prompt — a connector that
+  // swallowed the throw and fell back to some default would connect nobody
+  // while looking successful.
+  mockModule({ getAddress: async () => { throw new Error('User declined'); } });
   const opt = await connectOption();
   await rejects(opt.connect(), 'must reject a declined access request');
 });
 
-await ta('an empty address with NO error object still throws', async () => {
-  mockFreighter({ requestAccess: async () => ({ address: '' }) });
+await ta('an empty address with no thrown error still throws', async () => {
+  mockModule({ getAddress: async () => ({ address: '' }) });
   const opt = await connectOption();
   await rejects(opt.connect(), 'empty address must never be accepted');
 });
@@ -129,7 +143,7 @@ await ta('an empty address with NO error object still throws', async () => {
 await ta('a network-passphrase mismatch is refused, and it checks the PASSPHRASE not the name', async () => {
   // The label can say TESTNET while the passphrase is mainnet's; the passphrase
   // is what every signature is domain-separated by.
-  mockFreighter({
+  mockModule({
     getNetwork: async () => ({ network: 'TESTNET', networkPassphrase: 'Public Global Stellar Network ; September 2015' }),
   });
   const opt = await connectOption();
@@ -137,30 +151,27 @@ await ta('a network-passphrase mismatch is refused, and it checks the PASSPHRASE
 });
 
 await ta('a valid connect returns the address', async () => {
-  mockFreighter({});
+  mockModule({});
   const opt = await connectOption();
   const r = await opt.connect();
   eq(r.address, ACC);
 });
 
-await ta('an error alongside a VALID-LOOKING value is still refused', async () => {
-  // Isolates the .error check itself. Every other guard passes here: the
-  // address is real, the passphrase matches. Only _unwrap sees the problem.
-  // Without it, a call freighter reported as failed would be treated as good
-  // data — the same "degraded result read as a clean result" shape the scanner
-  // audit chased out of the backend.
-  mockFreighter({
-    getNetwork: async () => ({ network: 'TESTNET', networkPassphrase: PASS, error: { message: 'internal error' } }),
-  });
+await ta('a network read that throws is refused, not treated as a pass', async () => {
+  // Isolates the getNetwork() failure path — every other guard passes here
+  // (address is real). Without an explicit try/catch around getNetwork(), a
+  // thrown error would propagate as an unlabelled exception instead of a
+  // clear "could not read network" message.
+  mockModule({ getNetwork: async () => { throw new Error('wallet locked'); } });
   const opt = await connectOption();
-  await rejects(opt.connect(), 'a returned error must be refused even when the value looks usable');
+  await rejects(opt.connect(), 'a getNetwork() failure must be refused');
 });
 
 await ta('an empty address is refused AS an access failure, not as a bad address', async () => {
   // Isolates the empty-address guard from the strkey validation that would
   // otherwise also reject '' — the distinction matters because the two produce
   // different, differently actionable messages for the user.
-  mockFreighter({ requestAccess: async () => ({ address: '' }) });
+  mockModule({ getAddress: async () => ({ address: '' }) });
   const opt = await connectOption();
   let msg = '';
   try { await opt.connect(); } catch (e) { msg = e.message; }
@@ -169,40 +180,72 @@ await ta('an empty address is refused AS an access failure, not as a bad address
 });
 
 await ta('an address the adapter cannot validate is refused', async () => {
-  mockFreighter({ requestAccess: async () => ({ address: 'not-a-strkey' }) });
+  mockModule({ getAddress: async () => ({ address: 'not-a-strkey' }) });
   const opt = await connectOption();
   await rejects(opt.connect(), 'invalid strkey must be refused');
 });
 
 await ta('signing refuses a signature from a DIFFERENT account than the connected one', async () => {
-  // Real hazard: the user switches account in the extension between connect and
+  // Real hazard: the user switches account in the wallet between connect and
   // sign. The contract requires auth from the staker, so this would fail
   // on-chain after the user had already approved a prompt.
-  mockFreighter({ signTransaction: async () => ({ signedTxXdr: 'AAA=', signerAddress: ACC2 }) });
+  mockModule({ signTransaction: async () => ({ signedTxXdr: 'AAA=', signerAddress: ACC2 }) });
+  const opt = await connectOption();
+  await opt.connect();  // sets state._stellarModule to this mock
   window.SAFU.state.walletAddress = ACC;
   await rejects(CONN.signTransaction('xdr'), 'account switch must be caught');
   window.SAFU.state.walletAddress = null;
 });
 
 await ta('signing rejects an empty signed XDR', async () => {
-  mockFreighter({ signTransaction: async () => ({ signedTxXdr: '' }) });
+  mockModule({ signTransaction: async () => ({ signedTxXdr: '' }) });
+  const opt = await connectOption();
+  await opt.connect();
   window.SAFU.state.walletAddress = ACC;
   await rejects(CONN.signTransaction('xdr'), 'empty signature must be rejected');
+  window.SAFU.state.walletAddress = null;
+});
+
+await ta('signing with no wallet module selected is refused, not a silent no-op', async () => {
+  mockModule({});
+  window.SAFU.state._stellarModule = null;
+  window.SAFU.state.walletAddress = ACC;
+  await rejects(CONN.signTransaction('xdr'), 'signing before connect must be refused');
   window.SAFU.state.walletAddress = null;
 });
 
 await ta('the Stellar connector REFUSES to run while an EVM chain is active', async () => {
   // Guards against a caller reaching the wrong connector and getting a
   // misleading "wrong network" message aimed at the user's wallet.
-  mockFreighter({});
+  mockModule({});
   window.SAFU.setChain('ethereum');
   await rejects(CONN.signTransaction('xdr'), 'must refuse when family does not match');
   window.SAFU.setChain('stellar');
 });
 
-t('Freighter has no programmatic disconnect and does not pretend otherwise', () => {
-  // Access is a standing per-origin permission the USER controls. Claiming to
-  // revoke it would be a false statement about what this page can do.
+await ta('options() skips a module whose isAvailable() times out', async () => {
+  // Live-tested against the real bundle 2026-08-19: Freighter and Lobstr hang
+  // past the kit's own documented 1000ms contract with no extension
+  // installed. A slow module must not stall or crash the whole wallet list.
+  window.SAFU.setChain('stellar');
+  const fastMod = {
+    productName: 'Fast', isAvailable: async () => true,
+    getAddress: async () => ({ address: ACC }),
+    getNetwork: async () => ({ network: 'TESTNET', networkPassphrase: PASS }),
+    signTransaction: async () => ({ signedTxXdr: 'AAA=', signerAddress: ACC }),
+  };
+  window.SAFUStellarWalletModules = {
+    modules: { slow: { productName: 'Slow', isAvailable: () => new Promise(() => {}) }, fast: fastMod },
+  };
+  const opts = await CONN.options();
+  eq(opts.length, 1, 'the hanging module must be excluded, not block the list');
+  eq(opts[0].name, 'Fast');
+});
+
+t('Stellar wallet modules have no programmatic disconnect and do not pretend otherwise', () => {
+  // Access is a standing per-origin permission the USER controls in each
+  // wallet. Claiming to revoke it would be a false statement about what this
+  // page can do.
   eq(typeof CONN.disconnect, 'function');
   CONN.disconnect();
 });

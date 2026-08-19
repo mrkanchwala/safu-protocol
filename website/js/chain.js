@@ -9,6 +9,21 @@ window.SAFU = window.SAFU || {};
 (() => {
   const cache = new Map();
 
+  // Shared staleness token for every async chain-scoped read in the app
+  // (stake bounds, staker count, stake status, wallet-list detection, …).
+  // 2026-08-19: found FOUR separate async functions across init.js and
+  // wallet.js that write chain-scoped DOM from an awaited read with no check
+  // that the active chain is still the one the read was FOR — reported as
+  // "chose XLM, form still shows ETH numbers" and "WalletConnect button
+  // disappears on rapid chain switch". Both are the same race: chain A's read
+  // starts, chain B is selected before it resolves, A's stale result lands
+  // after B's fresh one and silently overwrites it, because EVM's reads and
+  // Stellar's reads are not the same speed (RPC endpoints differ, script
+  // loads differ). One shared counter here, checked by every such function
+  // after its own await(s), instead of four separately hand-rolled tokens.
+  let _chainGen = 0;
+  window.SAFU.chainGeneration = () => _chainGen;
+
   // Active chain's raw config.
   window.SAFU.chain = function () {
     const state = window.SAFU.state;
@@ -49,6 +64,7 @@ window.SAFU = window.SAFU || {};
     if (S.walletAddress && window.SAFU.wallet) {
       window.SAFU.wallet.disconnect();
     }
+    _chainGen++;
     S.activeChain  = chainId;
     S.stakeMin     = null;
     S.stakeMax     = null;

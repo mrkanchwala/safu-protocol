@@ -110,7 +110,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
    in-modal-only switcher. Two buttons max realistically (family is EVM or
    Stellar-shaped for the foreseeable set), so a flex row is fine; CHAIN_ORDER
    still drives how many render. */
-.chain-picker { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.chain-picker { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 2.5rem; margin-bottom: 1.5rem; }
 .chain-btn {
   font-family: inherit; font-size: 0.78rem; letter-spacing: 0.06em;
   padding: 0.5rem 1rem; cursor: pointer; background: transparent;
@@ -270,14 +270,13 @@ footer a:hover { color: var(--muted); }
 .sec-guarantee-item { border: 1px solid var(--border); padding: 1.25rem; background: var(--panel); }
 
 /* ── TEAM ───────────────────────────────────────────────────── */
+.team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+@media (max-width: 768px) { .team-grid { grid-template-columns: 1fr; } }
 .team-card {
-  max-width: 560px;
   border: 1px solid var(--border);
   background: var(--panel);
   padding: 2rem;
-  margin-bottom: 1.5rem;
 }
-.team-card:last-child { margin-bottom: 0; }
 .team-name {
   font-size: 1rem;
   font-weight: 700;

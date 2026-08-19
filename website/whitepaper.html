@@ -333,6 +333,20 @@
       <div class="wp-verdict">✓ on EVM: all listed properties verified across every possible contract state</div>
 
       <div class="wp-body">
+        <!-- Added 2026-08-19: the paragraph above named what Soroban lacks
+             (a symbolic verifier) without saying what it has instead, which
+             reads as "nothing" rather than "a different, real compensating
+             control" — the same gap the homepage's evidence.symbolic panel
+             already avoids by giving Stellar its own real figures instead of
+             a blank. Test count (238) matches the live Soroban suite; fuzzing
+             is named as the project's designed methodology for this gap, not
+             a completed run — per TESTING.md, T2 fuzz coverage has not been
+             re-verified on a Linux host yet, so no specific fuzz result is
+             claimed here. -->
+        <p>Soroban has no tool equivalent to Halmos's symbolic execution yet, so its compensating control is different, not absent: 238 automated tests cover the same invariant surface (forfeiture on claim, balance accuracy, withdrawal locking, two-key separation, payout caps), and property-based fuzzing is designed as the project's second layer for what symbolic execution would otherwise catch.</p>
+      </div>
+
+      <div class="wp-body">
         <h3>Oracle and wallet safety</h3>
         <p>The payout oracle signing key is held in AWS KMS, isolated from the server runtime, using the signature scheme each chain requires. Every signed message is bound to a specific contract and network, which prevents replay. A 2-of-2 override mechanism (owner + co-signer, separate keys) handles disputes without bypassing rate limits.</p>
         <p>Staking sends your asset to the pool and grants no token approvals and no spending permissions. The contract cannot access any other asset in your wallet, before, during, or after staking.</p>

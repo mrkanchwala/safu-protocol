@@ -214,6 +214,9 @@ window.SAFU.chainUI = (() => {
   function renderChainProse(cfg) {
     setText('step-desc-connect', cfg.walletsLine);
 
+    const beneInput = document.getElementById('input-beneficiary');
+    if (beneInput && cfg.beneficiaryPlaceholder) beneInput.placeholder = cfg.beneficiaryPlaceholder;
+
     const hintEl = document.getElementById('step-desc-stream-hint');
     if (hintEl && cfg.claimIdHint) hintEl.innerHTML = cfg.claimIdHint;
 

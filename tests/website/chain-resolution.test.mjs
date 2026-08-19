@@ -99,6 +99,46 @@ t('setChain clears per-chain state on a real switch', () => {
   S.activeChain = null;
 });
 
+// 2026-08-19: chainGeneration() is the shared staleness token wallet.js's
+// _renderWallets() and init.js's three async reads all check after an await,
+// closing a real bug (rapid chain switching let a slower stale render
+// overwrite a faster fresh one — reported as "the WalletConnect button
+// disappears" and "chose XLM, form still shows ETH numbers"). Direct
+// regression coverage for the primitive itself, not just its callers.
+t('chainGeneration() increments on a real chain switch', () => {
+  CONFIG.CHAINS.testchain = { ...CONFIG.CHAINS.ethereum, id: 'testchain', decimals: 7 };
+  const before = window.SAFU.chainGeneration();
+  window.SAFU.setChain('testchain');
+  ok(window.SAFU.chainGeneration() > before, 'a real switch must bump the generation token');
+  delete CONFIG.CHAINS.testchain;
+  window.SAFU.state.activeChain = null;
+});
+
+t('chainGeneration() does NOT increment on an idempotent setChain to the same chain', () => {
+  // If it bumped on every call regardless of whether the chain actually
+  // changed, a caller's own guard check (`gen !== chainGeneration()`) could
+  // spuriously fail even with no real race — the exact false-positive shape
+  // that would make the wallet list get stuck permanently empty.
+  window.SAFU.setChain(CONFIG.DEFAULT_CHAIN);
+  const before = window.SAFU.chainGeneration();
+  window.SAFU.setChain(CONFIG.DEFAULT_CHAIN);
+  eq(window.SAFU.chainGeneration(), before, 'setChain to the SAME chain must not bump the token');
+});
+
+t('a staleness check simulating the real race resolves to the NEWER chain, not whichever finished last', () => {
+  // Models the actual bug: render A starts (captures gen), a real switch
+  // happens (bumps gen), render A "finishes" and checks staleness before
+  // writing — must detect it is stale and refuse to write, regardless of
+  // finishing after or before render B.
+  CONFIG.CHAINS.testchain = { ...CONFIG.CHAINS.ethereum, id: 'testchain', decimals: 7 };
+  const genAtRenderAStart = window.SAFU.chainGeneration();
+  window.SAFU.setChain('testchain');  // a newer switch supersedes render A mid-flight
+  const staleRenderAIsStale = genAtRenderAStart !== window.SAFU.chainGeneration();
+  ok(staleRenderAIsStale, 'a superseded render must detect its own staleness');
+  delete CONFIG.CHAINS.testchain;
+  window.SAFU.state.activeChain = null;
+});
+
 // ── invariants every chain entry must satisfy ────────────────────────────────
 
 t('CHAIN_ORDER only names chains that exist in CHAINS', () => {
