@@ -98,6 +98,19 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 
 /* ── HERO ───────────────────────────────────────────────────── */
 .hero { padding: 6rem 0 4rem; min-height: 70vh; display: flex; align-items: center; }
+/* The .container here is a FLEX ITEM, so without an explicit width it
+   shrink-wraps to its widest child's max-content width instead of filling the
+   page grid. Two consequences, both bugs (found 2026-08-19):
+     1. index.html — showing the testnet band on a testnet chain introduced a
+        857px-wide child where the widest was previously .hero-sub at 760px.
+        The container grew, `margin: 0 auto` re-centred it, and the ENTIRE hero
+        column slid 48px left on every chain switch.
+     2. protocols.html — the hero sat at x=340 while nav, stats and every
+        section below sit at x=32, for no reason anyone chose.
+   `align-items: center` is here for VERTICAL centring inside min-height; the
+   horizontal shrink-fit was never intended. width:100% restores the grid and
+   makes the hero geometry independent of its content. */
+.hero > .container { width: 100%; }
 .hero h1 { font-size: clamp(2rem, 5vw, 3.6rem); font-weight: 700; line-height: 1.15; margin-bottom: 1.8rem; }
 .hero h1 .red  { color: var(--red); }
 .hero h1 .cyan { color: var(--white); }
