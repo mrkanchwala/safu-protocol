@@ -147,6 +147,15 @@ window.CONFIG = {
       // that rendered under Stellar too, whose addresses are never 0x-shaped.
       // Config-driven now, same reasoning as walletsLine two lines up.
       beneficiaryPlaceholder: '0x... beneficiary address',
+      // 2026-08-19: same gap as beneficiaryPlaceholder above, found later in
+      // the same pass — the claim-flow inputs (scan tx, dispute tx/wallet,
+      // stream claim-id/beneficiary) all had their own separate hardcoded
+      // "0x..." defaults, never covered by the earlier fix.
+      claimTxPlaceholder:          '0x... drain tx hash',
+      disputeTxPlaceholder:        '0x... tx hash',
+      disputeWalletPlaceholder:    '0x... your wallet address',
+      claimIdPlaceholder:          '0x... claim ID (bytes32)',
+      streamBeneficiaryPlaceholder:'0x... your beneficiary address',
       // Trusted HTML — developer-authored, not user input. <strong> is safe
       // to interpolate directly (same trust basis as loader()'s <span>).
       claimIdHint: 'Claim ID is emitted in the <strong>ClaimActivated</strong> event on Etherscan.',
@@ -312,6 +321,16 @@ window.CONFIG = {
       // G... is an account strkey — the correct shape for a beneficiary
       // (contracts use C..., not the intended target here).
       beneficiaryPlaceholder: 'G... beneficiary address',
+      // 2026-08-19: same claim-flow gap as Ethereum's matching fields above.
+      // Tx hashes and claim ids are bare 64 hex on Stellar — NO 0x prefix,
+      // adapter-stellar.js's isValidTxHash/isValidClaimId reject a prefixed
+      // value outright (see that file's comment — it means the caller pasted
+      // an EVM hash, and the scanner would report a guaranteed false miss).
+      claimTxPlaceholder:          'drain tx hash (64 hex chars, no 0x)',
+      disputeTxPlaceholder:        'tx hash (64 hex chars, no 0x)',
+      disputeWalletPlaceholder:    'G... your wallet address',
+      claimIdPlaceholder:          'claim ID (64 hex chars, no 0x)',
+      streamBeneficiaryPlaceholder:'G... your beneficiary address',
       // Verified against contracts/protection-pool/src/claim.rs in
       // safu-soroban (2026-08-19): Soroban has NO `ClaimActivated` event —
       // the nearest equivalent is `ClaimSubmitted`, emitted with claim_id as

@@ -217,6 +217,21 @@ window.SAFU.chainUI = (() => {
     const beneInput = document.getElementById('input-beneficiary');
     if (beneInput && cfg.beneficiaryPlaceholder) beneInput.placeholder = cfg.beneficiaryPlaceholder;
 
+    // Same fix as input-beneficiary above, for the claim-flow's own inputs —
+    // each was its own separate hardcoded "0x..." default, not covered by
+    // the earlier pass.
+    const placeholderMap = {
+      'input-claim-tx':           cfg.claimTxPlaceholder,
+      'dispute-tx':                cfg.disputeTxPlaceholder,
+      'dispute-wallet':            cfg.disputeWalletPlaceholder,
+      'input-claim-id':            cfg.claimIdPlaceholder,
+      'input-stream-beneficiary':  cfg.streamBeneficiaryPlaceholder,
+    };
+    for (const [id, text] of Object.entries(placeholderMap)) {
+      const el = document.getElementById(id);
+      if (el && text) el.placeholder = text;
+    }
+
     const hintEl = document.getElementById('step-desc-stream-hint');
     if (hintEl && cfg.claimIdHint) hintEl.innerHTML = cfg.claimIdHint;
 
