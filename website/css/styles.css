@@ -220,7 +220,16 @@ footer a:hover { color: var(--muted); }
 /* ── WALLET MODAL ───────────────────────────────────────────── */
 .wallet-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 500; align-items: center; justify-content: center; }
 .wallet-modal.open { display: flex; }
-.wallet-box { background: var(--panel); border: 1px solid var(--border); padding: 2rem; min-width: 320px; max-width: 90vw; }
+/* FIXED width, auto height — the box must not resize as its contents change.
+   With `min-width: 320px` and no width it shrink-wrapped to its widest child,
+   so the box jumped 414px -> 320px moving from the chain step to the wallet
+   step (measured 2026-08-19), and again between chains, because Stellar offers
+   seven wallets where Ethereum's widest row is the WalletConnect blurb. The
+   width is now the same in every state and only the HEIGHT tracks how many
+   buttons a chain actually has, which is the one dimension that should vary.
+   420px clears the widest real row (the WalletConnect line, 414px) without
+   forcing a reflow; long wallet names wrap rather than widen the box. */
+.wallet-box { background: var(--panel); border: 1px solid var(--border); padding: 2rem; width: 420px; max-width: 90vw; overflow-wrap: anywhere; }
 .wallet-box h3 { font-size: 0.9rem; color: var(--white); margin-bottom: 1.5rem; letter-spacing: 0.05em; }
 .wallet-option { display: flex; align-items: center; gap: 1rem; padding: 0.85rem 1rem; border: 1px solid var(--border); cursor: pointer; margin-bottom: 0.75rem; font-size: 0.82rem; color: var(--muted); transition: all 0.15s; background: transparent; width: 100%; font-family: inherit; text-align: left; }
 .wallet-option:hover { border-color: var(--white); color: var(--white); }
