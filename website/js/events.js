@@ -6,6 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.addEventListener(evt, fn);
   }
 
+  // The for-protocols CTA points at the same intake form as the nav link and
+  // the claim-dispute flow. Set from CONFIG rather than hardcoded in markup so
+  // the URL has one source of truth.
+  const getInTouch = document.getElementById('btn-get-in-touch');
+  if (getInTouch) getInTouch.href = CONFIG.FEEDBACK_FORM_URL;
+
   // Wallet modal
   on('btn-wallet-close',  'click', () => window.SAFU.wallet.close());
 

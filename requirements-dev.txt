@@ -1,0 +1,17 @@
+# SAFU backend — development / CI dependencies
+#
+# Install alongside requirements.txt:
+#   pip install -r requirements.txt -r requirements-dev.txt
+#
+# Kept separate so the deployed service never pulls test tooling onto the VPS.
+
+-r requirements.txt
+
+pytest==9.0.2
+
+# Linting. Ruff caught two real defects during the 7a audit that the test
+# suite did not: an F821 undefined name inside an audit fix, and the same
+# class of error that made the Redis receiver-hits cache silently never work
+# (`os` never imported in scanner_multichain/evm.py, the NameError swallowed by
+# a broad except). Worth having in CI for safu/scanner_multichain/ specifically.
+ruff

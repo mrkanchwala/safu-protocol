@@ -6,8 +6,13 @@
 <title>SAFU — Feedback</title>
 <meta name="description" content="Share a suggestion, report an issue, or get in touch with the SAFU team.">
 
-<meta http-equiv="X-Content-Type-Options" content="nosniff">
-<meta http-equiv="X-Frame-Options" content="DENY">
+<!-- X-Frame-Options and X-Content-Type-Options are DELIBERATELY ABSENT here.
+     Both are header-only: a browser ignores them in a <meta> tag entirely, and
+     Chrome logs a warning for X-Frame-Options on every page load. nginx sets
+     both for real (verified live 2026-08-19: x-frame-options: DENY,
+     x-content-type-options: nosniff). Re-adding them here restores dead markup
+     that reads as protection the HTML does not provide. Referrer-Policy below
+     IS valid in meta and stays. -->
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy"
   content="default-src 'self';
@@ -138,7 +143,7 @@
     </div>
     <div class="fb-card">
       <div class="fb-card-label">[ prefer direct? ]</div>
-      <div class="fb-card-text">Reach the team on Telegram: <a href="https://t.me/mrkanchwala" target="_blank" rel="noopener noreferrer" style="color: var(--cyan);">@mrkanchwala ↗</a></div>
+      <div class="fb-card-text">Join the SAFU channel on Telegram: <a href="https://t.me/+sza3oozmzzJlNzk0" target="_blank" rel="noopener noreferrer" style="color: var(--cyan);">t.me/safu ↗</a></div>
     </div>
   </div>
 

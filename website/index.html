@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAFU — System Assurances, F**k You.</title>
-<meta name="description" content="SAFUPool is a wallet protection protocol. Stake ETH and get covered against wallet drains. If your wallet gets drained, the contract pays you back up to 15x automatically, with no committee and no vote.">
+<meta name="description" content="A loss-socialization protocol. Stake, and a verified loss pays out up to 15:1 automatically. No committee, no vote, no claim form.">
 <link rel="canonical" href="https://safustaking.com/">
 <meta name="robots" content="index, follow">
 
@@ -13,7 +13,7 @@
 <meta property="og:url" content="https://safustaking.com/">
 <meta property="og:site_name" content="SAFU Protocol">
 <meta property="og:title" content="SAFU — System Assurances, F**k You.">
-<meta property="og:description" content="Stake ETH and get covered against wallet drains. If your wallet gets drained, the contract pays you back up to 15x automatically, with no committee and no vote.">
+<meta property="og:description" content="A loss-socialization protocol. Stake, and a verified loss pays out up to 15:1 automatically. No committee, no vote, no claim form.">
 <meta property="og:image" content="https://safustaking.com/og-image.png?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -24,54 +24,53 @@
 <meta name="twitter:site" content="@safu_staking">
 <meta name="twitter:creator" content="@safu_staking">
 <meta name="twitter:title" content="SAFU — System Assurances, F**k You.">
-<meta name="twitter:description" content="Stake ETH and get covered against wallet drains. If your wallet gets drained, the contract pays you back up to 15x automatically, with no committee and no vote.">
+<meta name="twitter:description" content="A loss-socialization protocol. Stake, and a verified loss pays out up to 15:1 automatically. No committee, no vote, no claim form.">
 <meta name="twitter:image" content="https://safustaking.com/og-image.png?v=2">
 
 <!-- AIEO / Structured Data -->
-<script type="application/ld+json">
+<script type="application/ld+json" id="ld-webapp">
 {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   "name": "SAFU Protocol",
   "alternateName": "SAFUPool",
-  "description": "Decentralised crypto wallet protection protocol. Stake ETH and get covered against phishing attacks, approval exploits, and private key compromise. If your wallet gets drained, the contract pays out deterministically — 15:1 coverage ratio, no committee, no vote.",
+  "description": "Deterministic loss-socialization protocol. Stake into a pool and a verified loss pays out automatically, at up to 15:1, with no committee and no governance vote. Covers phishing, approval exploits, and key compromise at the wallet level, and oracle or governance manipulation at the protocol level.",
   "url": "https://safustaking.com",
   "applicationCategory": "FinanceApplication",
-  "operatingSystem": "Ethereum Mainnet",
-  "offers": {
-    "@type": "Offer",
-    "description": "Up to 15:1 coverage ratio, stake 0.01–0.75 ETH. Payout activates automatically on verified drain events.",
-    "priceCurrency": "ETH"
-  },
+  "operatingSystem": "Ethereum Mainnet, Stellar Testnet",
   "featureList": [
     "Deterministic payout — no human vote",
     "Up to 15:1 coverage ratio",
     "Covers phishing, approval exploits, private key compromise",
     "No lock period — withdraw anytime",
-    "On-chain verified — Etherscan"
+    "On-chain verified"
   ],
   "sameAs": [
     "https://x.com/safu_staking",
-    "https://github.com/mrkanchwala/safu-protocol",
-    "https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641"
+    "https://github.com/mrkanchwala/safu-protocol"
   ]
 }
 </script>
 
 <!-- Security headers via meta (nginx headers are primary — see nginx config) -->
-<meta http-equiv="X-Content-Type-Options" content="nosniff">
-<meta http-equiv="X-Frame-Options" content="DENY">
+<!-- X-Frame-Options and X-Content-Type-Options are DELIBERATELY ABSENT here.
+     Both are header-only: a browser ignores them in a <meta> tag entirely, and
+     Chrome logs a warning for X-Frame-Options on every page load. nginx sets
+     both for real (verified live 2026-08-19: x-frame-options: DENY,
+     x-content-type-options: nosniff). Re-adding them here restores dead markup
+     that reads as protection the HTML does not provide. Referrer-Policy below
+     IS valid in meta and stays. -->
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy"
   content="default-src 'self';
            script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com;
            style-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;
            font-src https://fonts.gstatic.com;
-           connect-src 'self' https://safustaking.com https://cdn.jsdelivr.net wss://relay.walletconnect.com https://relay.walletconnect.com wss://relay.walletconnect.org https://verify.walletconnect.org https://pulse.walletconnect.org https://api.web3modal.com;
+           connect-src 'self' https://safustaking.com https://soroban-testnet.stellar.org https://cdn.jsdelivr.net wss://relay.walletconnect.com https://relay.walletconnect.com wss://relay.walletconnect.org https://verify.walletconnect.org https://pulse.walletconnect.org https://api.web3modal.com;
            img-src 'self' data: https://imagedelivery.net https://registry.walletconnect.com;
            frame-src https://verify.walletconnect.org;">
 
-<link rel="stylesheet" href="css/styles.css?v=30">
+<link rel="stylesheet" href="css/styles.css?v=31">
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="apple-touch-icon" href="logo.png">
 </head>
@@ -80,7 +79,17 @@
 <!-- ── WALLET PICKER MODAL ──────────────────────────────────────── -->
 <div class="wallet-modal" id="wallet-modal">
   <div class="wallet-box">
-    <h3>> select wallet</h3>
+    <h3>> connect</h3>
+    <!-- SECONDARY confirmation, not primary selection (superseded 2026-08-19
+         — primary selection is now the page-level #chain-picker in the hero).
+         Kept here so a visitor who opens this modal directly still sees and
+         confirms which chain they are about to connect on before picking a
+         wallet. Hidden by wallet.js when only one chain is configured. -->
+    <div id="chain-step">
+      <div class="section-label"><span>//</span> 01 — chain</div>
+      <div id="chain-switcher"></div>
+      <div class="section-label"><span>//</span> 02 — wallet</div>
+    </div>
     <div id="wallet-list"></div>
     <button class="wallet-close" id="btn-wallet-close">[ cancel ]</button>
   </div>
@@ -97,8 +106,9 @@
       <a href="#claim" class="nav-hide">claim</a>
       <a href="#about" class="nav-hide">about</a>
       <a href="#security" class="nav-hide">security</a>
+      <a href="/protocols.html" class="nav-hide">for protocols</a>
       <a href="#team" class="nav-hide">team</a>
-      <a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer" class="nav-hide nav-hide-md">contract ↗</a>
+      <a href="/whitepaper.html" target="_blank" rel="noopener noreferrer" class="nav-hide nav-hide-md">whitepaper</a>
       <a href="https://docs.google.com/forms/d/1qD9IrIkfs39Wupaw5y-zvCS46Ppq4JQiIsRgV9D3s80/viewform" target="_blank" rel="noopener noreferrer" class="nav-hide nav-hide-md">feedback</a>
       <button id="btn-connect">[ connect wallet ]</button>
       <button id="btn-disconnect" class="d-none">[ disconnect ]</button>
@@ -109,6 +119,14 @@
 <!-- ── HERO ─────────────────────────────────────────────────────── -->
 <section class="hero">
   <div class="container">
+    <!-- Page-level chain picker + persistent testnet band (founder decision,
+         2026-08-19) — supersedes the in-modal-only switcher below. Clicking
+         either button reshapes the hero and every chain-scoped section. The
+         wallet modal's own chain step (below) still confirms the active
+         chain at connect time — this is not a replacement for that, it's the
+         PRIMARY way a visitor picks a chain before ever opening the modal. -->
+    <div class="chain-picker" id="chain-picker"></div>
+    <div class="testnet-band d-none" id="testnet-band"></div>
     <h1>
       System Assurances,<br>
       F<span class="red">**</span>K YOU<span class="red">.</span><br>
@@ -116,7 +134,7 @@
     </h1>
     <p class="hero-sub">
       Your exchange had assurances and your wallet provider had guarantees, and when your wallet got drained anyway, neither one paid you back.<br>
-      Put in a small amount of ETH and get covered for up to fifteen times that, and if your wallet gets drained the contract pays you back automatically with <strong>no claim form, no committee, and no one deciding whether you deserve it.</strong>
+      Put in a small amount of <span class="js-asset">ETH</span> and get covered for up to fifteen times that, and if your wallet gets drained the contract pays you back automatically with <strong>no claim form, no committee, and no one deciding whether you deserve it.</strong>
     </p>
     <div class="hero-actions">
       <button class="btn btn-cyan" id="btn-hero-stake">[ stake now ]</button>
@@ -129,22 +147,22 @@
 <!-- ── STATS ─────────────────────────────────────────────────────── -->
 <div class="stats-bar">
   <div class="container">
-    <div>
-      <div class="stat-val">100%</div>
-      <div class="stat-lbl">CATCH RATE</div>
+    <div id="stat-cell-catch-rate">
+      <div class="stat-val" id="stat-catch-rate">100%</div>
+      <div class="stat-lbl" id="stat-catch-rate-lbl">CATCH RATE</div>
       <div class="stat-note">*<a href="#about" class="link-inherit">test conditions, see below ↓</a></div>
     </div>
-    <div>
-      <div class="stat-val">UP TO 15:1</div>
-      <div class="stat-lbl">COVERAGE RATIO</div>
+    <div id="stat-cell-coverage">
+      <div class="stat-val" id="stat-coverage">UP TO 15:1</div>
+      <div class="stat-lbl" id="stat-coverage-lbl">COVERAGE RATIO</div>
     </div>
     <div>
-      <div class="stat-val">0.01–0.75 ETH</div>
+      <div class="stat-val" id="stat-stake-range">0.01–0.75 ETH</div>
       <div class="stat-lbl">STAKE RANGE</div>
     </div>
-    <div>
-      <div class="stat-val">NO LOCK</div>
-      <div class="stat-lbl">WITHDRAW ANYTIME</div>
+    <div id="stat-cell-lock">
+      <div class="stat-val" id="stat-lock">NO LOCK</div>
+      <div class="stat-lbl" id="stat-lock-lbl">WITHDRAW ANYTIME</div>
     </div>
     <div>
       <div class="stat-val" id="stat-stakers">—</div>
@@ -169,7 +187,7 @@
         <div class="step-num">[01]</div>
         <div class="step-content">
           <div class="step-title">Connect your wallet</div>
-          <div class="step-desc">MetaMask, Rabby, Rainbow, Trust, Safe — any EIP-1193 compatible wallet.</div>
+          <div class="step-desc" id="step-desc-connect">MetaMask, Rabby, Rainbow, Trust, Safe — any EIP-1193 compatible wallet.</div>
           <div class="mt-sm">
             <button class="btn btn-cyan" id="btn-stake-connect">[ connect wallet ]</button>
           </div>
@@ -198,7 +216,7 @@
         <div class="step-num">[03]</div>
         <div class="step-content">
           <div class="step-title">Choose your stake amount</div>
-          <div class="step-desc">Any amount between 0.01 and 0.75 ETH. Your tier is assessed at claim time, not at staking. Higher stakes get proportionally higher coverage.</div>
+          <div class="step-desc"><span id="stake-range-desc">Any amount between 0.01 and 0.75 ETH.</span> Your tier is assessed at claim time, not at staking. Higher stakes get proportionally higher coverage.</div>
           <div class="input-row">
             <input class="term-input" id="input-amount" type="number" step="0.01" min="0.01" max="0.75" placeholder="0.01 – 0.75 ETH" autocomplete="off" spellcheck="false" />
             <button class="btn btn-cyan" id="btn-enroll" disabled>[ confirm amount ]</button>
@@ -210,7 +228,7 @@
       <div class="step">
         <div class="step-num">[04]</div>
         <div class="step-content">
-          <div class="step-title">Stake ETH</div>
+          <div class="step-title">Stake <span class="js-asset">ETH</span></div>
           <div class="step-desc">Your wallet will prompt for confirmation. <strong>Coverage activates immediately after the tx confirms. No lock period — withdraw anytime.</strong></div>
           <div class="mt-sm">
             <button class="btn btn-red" id="btn-stake" disabled>[ stake ]</button>
@@ -244,7 +262,7 @@
         <div class="step-num">[01]</div>
         <div class="step-content">
           <div class="step-title">Scan the drain transaction</div>
-          <div class="step-desc">Paste the Ethereum tx hash of the drain. The oracle scores it. <strong>Scanning is safe — no commitment, no consequences.</strong></div>
+          <div class="step-desc">Paste the <span class="js-chain-name">Ethereum</span> tx hash of the drain. The oracle scores it. <strong>Scanning is safe — no commitment, no consequences.</strong></div>
           <div class="input-row">
             <input class="term-input" id="input-claim-tx" type="text" placeholder="0x... drain tx hash" autocomplete="off" spellcheck="false" />
             <button class="btn btn-cyan" id="btn-scan">[ scan ]</button>
@@ -260,7 +278,7 @@
             <div class="step-title text-cyan">Drain detected — confirm claim submission.</div>
             <div class="step-desc">The oracle confirmed a qualifying drain. Before submitting:</div>
             <div class="status-box err show mt-sm mb-sm">
-              ⚠ Submitting this claim permanently forfeits your <strong>staked ETH</strong>. Your beneficiary will begin receiving the payout stream. <strong>This cannot be undone, no recourse once submitted.</strong>
+              ⚠ Submitting this claim permanently forfeits your <strong>staked <span class="js-asset">ETH</span></strong>. Your beneficiary will begin receiving the payout stream. <strong>This cannot be undone, no recourse once submitted.</strong>
             </div>
             <div class="input-row">
               <button class="btn btn-red" id="btn-confirm-claim">[ confirm — submit claim ]</button>
@@ -310,7 +328,7 @@
           <div class="step-num">[—]</div>
           <div class="step-content">
             <div class="step-title">Pull claim stream</div>
-            <div class="step-desc">Call once per day after your claim activates. Claim ID is emitted in the <strong>ClaimActivated</strong> event on Etherscan.</div>
+            <div class="step-desc">Call once per day after your claim activates. <span id="step-desc-stream-hint">Claim ID is emitted in the <strong>ClaimActivated</strong> event on Etherscan.</span></div>
             <div class="input-row">
               <input class="term-input" id="input-claim-id" type="text" placeholder="0x... claim ID (bytes32)" spellcheck="false" />
             </div>
@@ -342,15 +360,15 @@
       </div>
       <div class="about-card">
         <h3>[ the protocol ]</h3>
-        <p>Put ETH into the pool and get covered for up to fifteen times what you put in if your wallet gets drained. The math decides, with no humans involved and no governance vote.</p>
+        <p>Put <span class="js-asset">ETH</span> into the pool and get covered for up to fifteen times what you put in if your wallet gets drained. The math decides, with no humans involved and no governance vote.</p>
       </div>
       <div class="about-card">
         <h3>[ the oracle ]</h3>
         <p>Every submitted drain gets scanned by the SAFU oracle, a closed-source fraud detection engine tested against verified real-world hacks. The same transaction always produces the same verdict, every time.</p>
       </div>
-      <div class="about-card">
+      <div class="about-card" id="about-card-catch-rate">
         <h3>[ the catch rate ]</h3>
-        <p>100% of confirmed drain transactions detected in controlled testing.*
+        <p><span id="about-catch-rate">100%</span> of confirmed drain transactions detected in controlled testing.*
         Human review is available for disputed verdicts.
         <br><br>
         <span class="note">*Based on test conditions using verified historical hacks. Real-world performance may vary.</span></p>
@@ -363,7 +381,7 @@
 <hr class="section-divider">
 <section id="security">
   <div class="container">
-    <div class="section-label"><span>//</span> 04 — security</div>
+    <div class="section-label"><span>//</span> 04 — security<span id="sec-chain-tag"></span></div>
     <h2>Independently audited and verified.</h2>
 
     <div class="sec-grid">
@@ -372,28 +390,29 @@
       <div class="terminal sec-panel">
         <div class="terminal-bar">
           <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <span class="terminal-title">security-audit.txt — 2026-06-18</span>
+          <span class="terminal-title" id="sec-audit-file">security-audit.txt — 2026-06-18</span>
         </div>
-        <div class="sec-label-inner">[ Security Audit — CSO + Slither ]</div>
-        <table class="sec-table">
-          <tr><td class="sev sev-cr">CRITICAL</td><td class="sev-count">0</td><td class="sev-note"></td></tr>
-          <tr><td class="sev sev-hi">HIGH</td><td class="sev-count">0</td><td class="sev-note"></td></tr>
-          <tr><td class="sev sev-me">MEDIUM</td><td class="sev-count">0</td><td class="sev-note"></td></tr>
-          <tr><td class="sev sev-lo">LOW</td><td class="sev-count">0</td><td class="sev-note"></td></tr>
-          <tr><td class="sev sev-in">INFO</td><td class="sev-count">0</td><td class="sev-note"></td></tr>
+        <div class="sec-label-inner" id="sec-audit-label">[ Security Audit — CSO + Slither ]</div>
+        <table class="sec-table" id="sec-audit-table">
+          <tr><td class="sev sev-cr">CRITICAL</td><td class="sev-count" id="sec-sev-critical">0</td><td class="sev-note"></td></tr>
+          <tr><td class="sev sev-hi">HIGH</td><td class="sev-count" id="sec-sev-high">0</td><td class="sev-note"></td></tr>
+          <tr><td class="sev sev-me">MEDIUM</td><td class="sev-count" id="sec-sev-medium">0</td><td class="sev-note"></td></tr>
+          <tr><td class="sev sev-lo">LOW</td><td class="sev-count" id="sec-sev-low">0</td><td class="sev-note"></td></tr>
+          <tr><td class="sev sev-in">INFO</td><td class="sev-count" id="sec-sev-info">0</td><td class="sev-note"></td></tr>
         </table>
-        <div class="sec-verdict-ok">✓ CSO + Slither — PASS</div>
+        <div class="sec-mini-sub d-none" id="sec-audit-note"></div>
+        <div class="sec-verdict-ok" id="sec-audit-verdict">✓ CSO + Slither — PASS</div>
       </div>
 
       <!-- Halmos Symbolic Execution -->
-      <div class="terminal sec-panel">
+      <div class="terminal sec-panel" id="sec-symbolic-panel">
         <div class="terminal-bar">
           <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <span class="terminal-title">halmos-symbolic.txt — 2026-06-18</span>
+          <span class="terminal-title" id="sec-symbolic-file">halmos-symbolic.txt — 2026-06-18</span>
         </div>
-        <div class="sec-label-inner">[ Halmos Symbolic Execution — a16z ]</div>
-        <div class="halmos-score">12 / 12</div>
-        <div class="halmos-sub">properties verified — zero counterexamples</div>
+        <div class="sec-label-inner" id="sec-symbolic-label">[ Halmos Symbolic Execution — a16z ]</div>
+        <div class="halmos-score" id="sec-symbolic-score">10 / 10</div>
+        <div class="halmos-sub" id="sec-symbolic-sub">properties verified — zero counterexamples</div>
         <ul class="check-list">
           <li>Claiming permanently forfeits your stake, enforced on-chain by the contract itself</li>
           <li>Pool balance stays accurate when a claim is cancelled</li>
@@ -401,7 +420,7 @@
           <li>All stake records reset correctly on cancellation</li>
           <li>The two approval keys are always held by different addresses</li>
           <li>Contract ownership cannot be transferred to the co-approval address</li>
-          <li>The contract never owes more than it holds in ETH</li>
+          <li>The contract never owes more than it holds in <span class="js-asset">ETH</span></li>
           <li>Payouts above the maximum allowed amount are always blocked</li>
           <li>Payouts above coverage limits are always blocked</li>
           <li>A cancelled claim can never release further payments</li>
@@ -412,24 +431,24 @@
     <!-- Bottom row -->
     <div class="sec-mini-grid">
       <div class="sec-mini-card">
-        <div class="sec-mini-title">[ security review — comprehensive ]</div>
+        <div class="sec-mini-title" id="sec-review-label">[ security review — comprehensive ]</div>
         <div class="sec-sev-row">
           <span class="sev sev-cr">CRITICAL 0</span>
           <span class="sev sev-hi">HIGH 0</span>
           <span class="sev sev-me">MEDIUM 0</span>
           <span class="sev sev-lo">LOW 0</span>
         </div>
-        <div class="sec-verdict-ok">✓ PASS — 2026-06-18</div>
+        <div class="sec-verdict-ok" id="sec-review-verdict">✓ PASS — 2026-06-18</div>
       </div>
       <div class="sec-mini-card">
-        <div class="sec-mini-title">[ forge test suite ]</div>
-        <div class="sec-mini-big">75 / 75</div>
-        <div class="sec-mini-sub">tests pass — full coverage</div>
+        <div class="sec-mini-title" id="sec-tests-label">[ forge test suite ]</div>
+        <div class="sec-mini-big" id="sec-tests-value">75 / 75</div>
+        <div class="sec-mini-sub" id="sec-tests-sub">tests pass — full coverage</div>
       </div>
       <div class="sec-mini-card">
         <div class="sec-mini-title">[ contract ]</div>
-        <div class="sec-mini-sub">Solidity 0.8.25 · BUSL-1.1</div>
-        <a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer" class="sec-ext-link">etherscan verified ↗</a>
+        <div class="sec-mini-sub" id="sec-contract-lang">Solidity 0.8.25 · BUSL-1.1</div>
+        <a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer" class="sec-ext-link" id="sec-contract-link">etherscan verified ↗</a>
       </div>
     </div>
 
@@ -437,15 +456,15 @@
     <div class="sec-guarantee">
       <div class="sec-guarantee-item">
         <div class="sec-mini-title">[ your wallet stays yours ]</div>
-        <p class="sec-mini-sub">Staking sends your ETH to the pool and grants no further permissions. The contract is structurally prevented from accessing any other asset in your wallet, at any point before, during, or after staking.</p>
+        <p class="sec-mini-sub">Staking sends your <span class="js-asset">ETH</span> to the pool and grants no further permissions. The contract is structurally prevented from accessing any other asset in your wallet, at any point before, during, or after staking.</p>
       </div>
-      <div class="sec-guarantee-item">
+      <div class="sec-guarantee-item" id="guarantee-invariant">
         <div class="sec-mini-title">[ your stake is protected on-chain ]</div>
-        <p class="sec-mini-sub">Mathematical verification confirmed the pool always holds more ETH than it owes. Only you can withdraw your staked ETH, and that guarantee holds regardless of who operates the pool or holds the signing key.</p>
+        <p class="sec-mini-sub">Mathematical verification confirmed the pool always holds more <span class="js-asset">ETH</span> than it owes. Only you can withdraw your staked <span class="js-asset">ETH</span>, and that guarantee holds regardless of who operates the pool or holds the signing key.</p>
       </div>
       <div class="sec-guarantee-item">
         <div class="sec-mini-title">[ claim submission &amp; MEV ]</div>
-        <p class="sec-mini-sub">Claim transactions are broadcast to the public mempool like any Ethereum transaction. Frontrunning bots cannot steal your claim — only the oracle can sign a valid payout, and the payout address is locked to your wallet at stake time. For lowest gas costs, submit claims during off-peak hours (weekends or early UTC mornings).</p>
+        <p class="sec-mini-sub">Only the oracle can sign a valid payout, and the payout address is locked to your wallet at stake time — frontrunning a claim gains an attacker nothing, regardless of how the transaction is broadcast. <span id="sec-mev-chain-note">Claim transactions are broadcast to the public mempool like any <span class="js-chain-name">Ethereum</span> transaction. For lowest gas costs, submit claims during off-peak hours (weekends or early UTC mornings).</span></p>
       </div>
     </div>
 
@@ -456,12 +475,12 @@
 <hr class="section-divider">
 <section id="team">
   <div class="container">
-    <div class="section-label"><span>//</span> 05 — team</div>
+    <div class="section-label"><span>//</span> 06 — team</div>
     <h2>Who built this</h2>
     <div class="team-card">
       <div class="team-name">Murtaza Kanchwala</div>
       <div class="team-role">Co-founder</div>
-      <p class="team-bio">Murtaza spent years in crypto across sales, BD, and operations. He started SAFU after filing a claim on a wallet loss, waiting three weeks for a governance vote, and receiving nothing. He decided the fix was to remove the committee.</p>
+      <p class="team-bio">Murtaza spent years in crypto across sales, BD, and operations. He started SAFU a few weeks after his own wallet was drained in a compromise in December 2025, and recovering it meant proving his identity and filing a police report, a process that took close to two months. He decided the fix was to remove the committee.</p>
       <div class="team-links">
         <a href="https://www.linkedin.com/in/mrmurtazakanchwala/" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.605 0 4.276 2.372 4.276 5.457v6.284zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
@@ -473,6 +492,17 @@
         </a>
       </div>
     </div>
+    <div class="team-card">
+      <div class="team-name">Deniz Köse</div>
+      <div class="team-role">Co-founder</div>
+      <p class="team-bio">Deniz Köse holds an Industrial Engineering degree from Koç University and spent six years across energy, international trading, and crypto before co-founding SAFU. He leads partnerships, go-to-market, and community growth, working alongside Murtaza to get the protocol in front of the wallets and platforms it protects.</p>
+      <div class="team-links">
+        <a href="https://www.linkedin.com/in/denizkosee/" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.605 0 4.276 2.372 4.276 5.457v6.284zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          linkedin ↗
+        </a>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -481,8 +511,7 @@
   <div class="container">
     <div class="footer-links">
       <span>SAFU — System Assurances, F**k You</span>
-      <a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">github ↗</a>
-      <a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer">etherscan ↗</a>
+      <a href="https://docs.google.com/forms/d/1qD9IrIkfs39Wupaw5y-zvCS46Ppq4JQiIsRgV9D3s80/viewform" target="_blank" rel="noopener noreferrer">feedback</a>
     </div>
 
     <!-- Social + contact -->
@@ -503,25 +532,43 @@
       </a>
     </div>
 
-    <div class="contract-addr">
-      <span class="text-dim">contract:</span> 0xa170f0937DEc353C1806eaC0c3d559524d458641
-    </div>
   </div>
 </footer>
 
 <!-- ── SCRIPTS — load order matters ────────────────────────────────── -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="js/config.js?v=30"></script>
-<script src="js/abi.js?v=30"></script>
-<script src="js/state.js?v=30"></script>
-<script src="js/ui.js?v=30"></script>
-<script src="js/init.js?v=30"></script>
-<script src="js/wallet.js?v=30"></script>
-<script src="js/stake.js?v=30"></script>
-<script src="js/claim.js?v=30"></script>
-<script src="js/stream.js?v=30"></script>
-<script src="js/events.js?v=30"></script>
+<!-- Subresource Integrity added 2026-08-19. Both files are version-pinned but
+     were previously loaded with no integrity attribute, so a compromise at
+     either CDN would execute arbitrary JS on a page where users sign mainnet
+     transactions with an injected provider in scope. Hashes computed from the
+     pinned artifacts (ethers 6.7.0, 479045 bytes; qrcode-generator 1.4.4,
+     20768 bytes). Regenerate if either version is ever bumped. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"
+        integrity="sha384-u0NcfwGT0MUYq60cVWPN34m99JhiJTCRG+0JOgmAQ++pTQ4w6AKkwhA9Wj/VjNRi"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"
+        integrity="sha384-lQXOAyZwHXE55JFyrOMB7nY2Wv+m5ZWNtJcHrd1rceRQXAYNLak8ukN5TjBTcIwz"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- Load order matters: config (data) → abi → state → adapters → chain
+     (resolver, needs adapters registered) → everything that consumes them. -->
+<script src="js/config.js?v=32"></script>
+<script src="js/abi.js?v=32"></script>
+<script src="js/state.js?v=32"></script>
+<script src="js/loader.js?v=32"></script>
+<script src="js/adapter-evm.js?v=32"></script>
+<script src="js/adapter-stellar.js?v=32"></script>
+<script src="js/chain.js?v=32"></script>
+<script src="js/ui.js?v=32"></script>
+<script src="js/chain-ui.js?v=32"></script>
+<script src="js/init.js?v=32"></script>
+<!-- Connectors before wallet.js: wallet.js resolves them by family at
+     modal-open time, and connector-evm starts EIP-6963 discovery on load. -->
+<script src="js/connector-evm.js?v=32"></script>
+<script src="js/connector-stellar.js?v=32"></script>
+<script src="js/wallet.js?v=32"></script>
+<script src="js/stake.js?v=32"></script>
+<script src="js/claim.js?v=32"></script>
+<script src="js/stream.js?v=32"></script>
+<script src="js/events.js?v=32"></script>
 
 </body>
 </html>

@@ -184,3 +184,10 @@
   .wp-nav-btn.active { border-bottom-color: #FF3B3B; border-left-color: transparent; }
   .wp-main { padding: 2rem 1.5rem 4rem; }
 }
+
+/* ── Remaining inline styles found + fixed 2026-08-19 (same CSP-fix reason
+   as this file's own header comment — these 4 were missed by that pass) ── */
+.wp-cover-subtitle { color: var(--muted); font-size: 0.75em; letter-spacing: 0.06em; }
+.wp-cover-desc { font-size: 0.84rem; color: var(--muted); line-height: 1.9; max-width: 600px; margin-top: 1.5rem; }
+.wp-body-spaced { margin-top: 2.5rem; }
+.wp-footer-note { margin-top: 3rem; font-size: 0.7rem; color: var(--dim); border-top: 1px solid var(--border); padding-top: 1.5rem; }

@@ -26,9 +26,27 @@
 <meta name="twitter:description" content="Deterministic wallet coverage for the onchain economy. Community-owned protection pool, automated payout, no committee, no vote.">
 <meta name="twitter:image" content="https://safustaking.com/og-image.png?v=2">
 
-<meta http-equiv="X-Content-Type-Options" content="nosniff">
-<meta http-equiv="X-Frame-Options" content="DENY">
+<!-- X-Frame-Options and X-Content-Type-Options are DELIBERATELY ABSENT here.
+     Both are header-only: a browser ignores them in a <meta> tag entirely, and
+     Chrome logs a warning for X-Frame-Options on every page load. nginx sets
+     both for real (verified live 2026-08-19: x-frame-options: DENY,
+     x-content-type-options: nosniff). Re-adding them here restores dead markup
+     that reads as protection the HTML does not provide. Referrer-Policy below
+     IS valid in meta and stays. -->
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<!-- ADDED 2026-08-19 — this page had NO meta CSP at all, the only one of the
+     four HTML documents without one. nginx's header is still primary, but a
+     page with zero local fallback has zero CSP if that header is ever
+     stripped (a caching layer, a misconfigured proxy, opening the file
+     directly). frame-ancestors omitted — header-only, ignored in meta. -->
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'self';
+           script-src 'self';
+           style-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;
+           font-src https://fonts.gstatic.com;
+           connect-src 'self';
+           img-src 'self' data:;
+           base-uri 'self'; form-action 'self';">
 
 <link rel="stylesheet" href="css/styles.css?v=30">
 <link rel="stylesheet" href="css/whitepaper.css?v=1">
@@ -102,25 +120,29 @@
         <h1>
           System Assurances,<br>
           F<span class="red">**</span>K YOU<span class="red">.</span><br>
-          <span style="color:var(--muted);font-size:0.75em;letter-spacing:0.06em;">Deterministic Wallet Coverage for the Onchain Economy</span>
+          <span class="wp-cover-subtitle">Deterministic Loss Socialization for the Onchain Economy</span>
         </h1>
-        <p style="font-size:0.84rem;color:var(--muted);line-height:1.9;max-width:600px;margin-top:1.5rem;">
-          SAFU is a smart contract protocol that pays out when your wallet gets drained. No committee, no vote, same inputs produce the same output every time.
+        <p class="wp-cover-desc">
+          SAFU is a smart contract protocol that pays out when a verified loss hits a wallet or a protocol it covers. No committee, no vote, same inputs produce the same output every time.
         </p>
+        <!-- One pointer replaces three hardcoded Ethereum links. A whitepaper
+             that never says where the protocol is deployed reads as vaporware,
+             so the trust signal is kept — but it points at the live surface,
+             which is chain-aware and never goes stale, instead of pinning one
+             chain's address into a versioned document. -->
         <div class="wp-cover-meta">
-          <span>Contract: <a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer">0xa170...d641 ↗</a></span>
-          <span><a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">github ↗</a></span>
-          <span><a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer">etherscan ↗</a></span>
+          <span>Live deployments, contract addresses, and per-chain audit results: <a href="/">safustaking.com</a></span>
         </div>
       </div>
 
       <div class="wp-stats">
-        <div class="wp-stat"><div class="wp-stat-val">0.01–0.75 ETH</div><div class="wp-stat-lbl">STAKE RANGE</div></div>
+        <!-- Stake range, Forge and Halmos were all Ethereum-only figures.
+             Forge and Halmos are EVM TOOLING and have no Soroban equivalent, so
+             they cannot be restated generically — they belong on the homepage's
+             chain-aware panel, which renders the active chain's own evidence. -->
         <div class="wp-stat"><div class="wp-stat-val">UP TO 15:1</div><div class="wp-stat-lbl">COVERAGE RATIO</div></div>
         <div class="wp-stat"><div class="wp-stat-val">7d</div><div class="wp-stat-lbl">CLAIM COOLDOWN</div></div>
         <div class="wp-stat"><div class="wp-stat-val">45d</div><div class="wp-stat-lbl">PAYOUT STREAM</div></div>
-        <div class="wp-stat"><div class="wp-stat-val">75/75</div><div class="wp-stat-lbl">FORGE TESTS PASS</div></div>
-        <div class="wp-stat"><div class="wp-stat-val">12/12</div><div class="wp-stat-lbl">HALMOS PROPERTIES</div></div>
       </div>
     </div>
 
@@ -133,7 +155,7 @@
       <div class="wp-body">
         <p>Every year, billions in crypto are drained from wallets and protocols through phishing attacks, stolen keys, and other exploits. The protocols designed to cover these losses require a committee to vote on your claim, or don't cover wallet-level drains at all.</p>
         <p><strong>SAFU gives protocols, wallets, and platforms the technology to socialize these losses deterministically</strong>, at the wallet level or the protocol level, with no premium and no vote. The same event always produces the same payout calculation. When a drain is verified, a 7-day cooldown starts, then a 45-day payout stream begins.</p>
-        <p>SAFUPoolV8 is live on Ethereum mainnet, with a Stellar testnet deployment carrying 184 passing tests. A protocol can deploy this same engine under its own brand, giving its own users deterministic coverage without building a claims system from scratch.</p>
+        <p>The protocol is live on multiple chains, each running the same audited engine against that chain's own native asset. A protocol can deploy this engine under its own brand, giving its own users deterministic coverage without building a claims system from scratch.</p>
         <p>This document describes how the protocol works, how the economics hold, and where it is heading.</p>
       </div>
     </div>
@@ -165,7 +187,7 @@
 
       <div class="wp-body">
         <h3>Existing protocols don't cover this</h3>
-        <p>Nexus Mutual settles claims by member vote, and its tracked value has fallen from about $800 million in 2022 to roughly $100 to 200 million today. InsurAce's value locked has dropped to $133,106 from a roughly $55 to 58 million peak, and Unslashed Finance's has fallen to $2.79 million from a roughly $170 to 180 million peak. None of these operate at the wallet level, and none let a business run the mechanism itself.</p>
+        <p>Nexus Mutual settles claims by member vote, and its tracked value has fallen from about $780 million at its 2021 peak to roughly $86 million. InsurAce's value locked has dropped to $133,106 from a roughly $55 to 58 million peak, and Unslashed Finance's has fallen to $2.79 million from a roughly $170 to 180 million peak. None of these operate at the wallet level, and none let a business run the mechanism itself.</p>
         <p>For the protocols that do attempt wallet-level coverage, every claim goes to a vote. Your payout depends on DAO participation rates you didn't choose. The result is slow, unpredictable, and discretionary.</p>
 
         <h3>The agent gap</h3>
@@ -215,16 +237,16 @@
         <h2>How It Works</h2>
       </div>
       <div class="wp-body">
-        <p>A wallet stakes any amount between 0.01 and 0.75 ETH to enroll. Enrollment is permissionless — no oracle approval required. The wallet's tier is assessed at claim time, not at staking. Tier determines the coverage multiplier applied to the staked amount.</p>
+        <p>A wallet stakes into the pool to enroll, within the range that pool sets. Enrollment is permissionless — no oracle approval required. The wallet's tier is assessed at claim time, not at staking. Tier determines the coverage multiplier applied to the staked amount.</p>
       </div>
 
       <div class="wp-table-wrap">
         <table class="wp-table">
-          <thead><tr><th>Tier</th><th>Coverage multiplier</th><th>Max payout (0.75 ETH stake)</th><th>Wallet profile</th></tr></thead>
+          <thead><tr><th>Tier</th><th>Coverage multiplier</th><th>Wallet profile</th></tr></thead>
           <tbody>
-            <tr><td><strong>A</strong></td><td>15x</td><td>11.25 ETH</td><td>Clean history, low risk signals</td></tr>
-            <tr><td><strong>B</strong></td><td>10x</td><td>7.5 ETH</td><td>Mixed history, moderate signals</td></tr>
-            <tr><td><strong>C</strong></td><td>5x</td><td>3.75 ETH</td><td>Higher risk signals detected</td></tr>
+            <tr><td><strong>A</strong></td><td>15x</td><td>Clean history, low risk signals</td></tr>
+            <tr><td><strong>B</strong></td><td>10x</td><td>Mixed history, moderate signals</td></tr>
+            <tr><td><strong>C</strong></td><td>5x</td><td>Higher risk signals detected</td></tr>
           </tbody>
         </table>
       </div>
@@ -267,7 +289,7 @@
         <span class="step-num">05</span>
         <div class="step-content">
           <div class="step-title">45-day payout stream</div>
-          <div class="step-desc">Linear payout to beneficiary over 45 days. A dynamic outflow cap (5%/3%/1% per day by tier) prevents any single event from draining the pool.</div>
+          <div class="step-desc">Linear payout to beneficiary over 45 days. A daily outflow cap, set per pool, prevents any single event from draining it.</div>
         </div>
       </div>
     </div>
@@ -279,40 +301,24 @@
         <h2>Security</h2>
       </div>
       <div class="wp-body">
-        <p>SAFUPool v8 is deployed at:</p>
-        <div class="wp-addr"><a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer">0xa170f0937DEc353C1806eaC0c3d559524d458641 ↗</a></div>
-      </div>
-
-      <div class="wp-table-wrap">
-        <table class="wp-table">
-          <thead><tr><th>Audit</th><th>Result</th><th>Date</th></tr></thead>
-          <tbody>
-            <tr>
-              <td>Tier-1 Security Benchmark (ToB + OZ standards)</td>
-              <td><strong>0 critical, 0 high, 0 medium</strong></td>
-              <td>June 2026</td>
-            </tr>
-            <tr>
-              <td>Halmos Symbolic Execution (a16z)</td>
-              <td><strong>12 / 12 properties, zero counterexamples</strong></td>
-              <td>June 2026</td>
-            </tr>
-            <tr>
-              <td>Comprehensive security review</td>
-              <td><strong>0 critical, 0 high, 0 medium, 3 low (accepted)</strong></td>
-              <td>June 2026</td>
-            </tr>
-            <tr>
-              <td>Forge test suite</td>
-              <td><strong>75 / 75 tests pass</strong></td>
-              <td>June 2026</td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- The deployed address and the four-row audit table were both
+             Ethereum-only, and the table named EVM tooling (Halmos, Forge) that
+             does not exist for Soroban. Per-chain results render on the
+             homepage from config, so a new chain needs no whitepaper edit. -->
+        <p>Every deployment ships with a full test suite and an independent security review before it goes live.</p>
       </div>
 
       <div class="wp-body">
         <h3>Verified by symbolic execution</h3>
+        <!-- Scoping line added 2026-08-19. This whitepaper is deliberately
+             chain-agnostic and loads no config — it cannot render this
+             qualifier per deployment the way index.html's evidence.symbolic
+             panel does, so it has to state its own scope in prose instead.
+             Without it, "every deployment" one paragraph up plus an
+             unqualified property list reads as a universal guarantee, when
+             symbolic execution is EVM-only tooling (Halmos) with no mature
+             equivalent in the Soroban ecosystem yet. -->
+        <p>On the EVM implementation specifically, the following core invariants are additionally verified by symbolic execution (Halmos) across every possible contract state — a formal-methods check beyond the test suite and review above. Soroban has no equivalent symbolic verifier available today; per-chain verification status is shown on the homepage.</p>
       </div>
       <ul class="check-list">
         <li>Claiming permanently forfeits your stake, enforced on-chain by the contract itself</li>
@@ -324,13 +330,13 @@
         <li>Payouts above coverage limits are always blocked</li>
         <li>A cancelled claim can never release further payments</li>
       </ul>
-      <div class="wp-verdict">✓ all properties verified across every possible contract state</div>
+      <div class="wp-verdict">✓ on EVM: all listed properties verified across every possible contract state</div>
 
       <div class="wp-body">
         <h3>Oracle and wallet safety</h3>
-        <p>The payout oracle signing key is held in AWS KMS (secp256k1, eu-north-1), isolated from the server runtime. All signed messages include the contract address and chain ID, which prevents replay attacks. A 2-of-2 override mechanism (owner + co-signer, separate keys) handles disputes without bypassing rate limits.</p>
-        <p>Staking sends ETH to the pool and grants no token approvals and no spending permissions. The contract cannot access any other asset in your wallet, before, during, or after staking.</p>
-        <p>The fraud scanner is being expanded into a chain-parity module covering Ethereum, Solana, and Stellar detection patterns under one scoring backend, so the same engine that scores Ethereum drains today becomes the mechanism for every future chain SAFU deploys to, rather than a separate scanner per chain.</p>
+        <p>The payout oracle signing key is held in AWS KMS, isolated from the server runtime, using the signature scheme each chain requires. Every signed message is bound to a specific contract and network, which prevents replay. A 2-of-2 override mechanism (owner + co-signer, separate keys) handles disputes without bypassing rate limits.</p>
+        <p>Staking sends your asset to the pool and grants no token approvals and no spending permissions. The contract cannot access any other asset in your wallet, before, during, or after staking.</p>
+        <p>The fraud scanner runs on a chain-parity module, one scoring backend covering every chain SAFU deploys to, so the same engine that scores Ethereum drains today becomes the mechanism for the next chain rather than a separate scanner built from scratch.</p>
       </div>
     </div>
 
@@ -341,7 +347,7 @@
         <h2>Economic Model</h2>
       </div>
       <div class="wp-body">
-        <p>The Ethereum staking pool is ETH-only; each chain's pool is denominated in that chain's own native asset. Claims are paid from this pool. A dynamic outflow cap (5%/3%/1% per day by tier) and 45-day vesting period ensure no single event can drain it.</p>
+        <p>Each chain's pool is denominated in that chain's own native asset. Claims are paid from this pool. A daily outflow cap, set per pool, and a 45-day vesting period ensure no single event can drain it.</p>
         <p>The initial deployment is a test pool designed to stress-test the system under real conditions. Coverage caps are small by design. Production economics require a larger pool and higher stake amounts, scoped for Q3 2026.</p>
 
         <h3>Revenue streams</h3>
@@ -381,7 +387,7 @@
         <span class="step-num">01</span>
         <div class="step-content">
           <div class="step-title">Ecosystem integration</div>
-          <div class="step-desc">Grant-funded deployment and audit on each chain builds the credibility SAFU needs before any protocol on it will trust it. Stellar's build is already in motion under SCF #44, with the funded audit and mainnet deploy following as that grant's remaining tranches close.</div>
+          <div class="step-desc">Grant-funded deployment and audit on each chain builds the credibility SAFU needs before any protocol on it will trust it. Stellar's build is already in motion under SCF #44, with the funded audit and mainnet deploy following as that grant's remaining tranches close. Staking is the deposit step in SCF #44's D3 deliverable — the same action, and the interface calls it staking everywhere because forfeiture on a paid claim is what the word has to carry.</div>
         </div>
       </div>
       <div class="step">
@@ -399,7 +405,7 @@
         </div>
       </div>
 
-      <div class="wp-body" style="margin-top:2.5rem;">
+      <div class="wp-body wp-body-spaced">
         <h3>Model 2 — B2C pools (deferred)</h3>
         <p>Longer term, once ecosystem integration and whitelabel pools produce real traction, SAFU intends a dedicated push into direct consumer reach for the same pool individuals and agents can already stake into today.</p>
 
@@ -419,12 +425,12 @@
         <p>No SAFU token exists today, and none is being offered. If one is introduced alongside the deferred models described in the Roadmap, it would be a utility token conferring governance rights and access to protocol functions, not a security under any jurisdiction. This assertion does not constitute legal advice.</p>
         <p>This whitepaper is for informational purposes only. Nothing in it constitutes a solicitation, offer, or commitment to enter any transaction.</p>
         <p>Protocol operates under BUSL-1.1 license. Source: <a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">github.com/mrkanchwala/safu-protocol ↗</a></p>
-        <p style="margin-top:3rem;font-size:0.7rem;color:var(--dim);border-top:1px solid var(--border);padding-top:1.5rem;">
+        <p class="wp-footer-note">
           SAFU — System Assurances, F**k You. &nbsp;·&nbsp;
           <a href="/">safustaking.com</a> &nbsp;·&nbsp;
           <a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">GitHub ↗</a> &nbsp;·&nbsp;
           <a href="https://etherscan.io/address/0xa170f0937DEc353C1806eaC0c3d559524d458641" target="_blank" rel="noopener noreferrer">Etherscan ↗</a><br>
-          Version 0.1 — June 2026. Subject to revision.
+          Version 0.2 — June 2026. Subject to revision.
         </p>
       </div>
     </div>

@@ -6,7 +6,7 @@
   --bg:     #0a0a0a;
   --red:    #FF3B3B;
   --white:  #ffffff;
-  --dim:    #444444;
+  --dim:    #787878;
   --muted:  #888888;
   --border: #1a1a1a;
   --panel:  #0d0d0d;
@@ -105,9 +105,39 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .hero-sub strong { color: var(--white); font-weight: 400; }
 .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
 
+/* ── CHAIN PICKER ───────────────────────────────────────────── */
+/* Page-level chain selection (founder decision, 2026-08-19) — supersedes the
+   in-modal-only switcher. Two buttons max realistically (family is EVM or
+   Stellar-shaped for the foreseeable set), so a flex row is fine; CHAIN_ORDER
+   still drives how many render. */
+.chain-picker { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.chain-btn {
+  font-family: inherit; font-size: 0.78rem; letter-spacing: 0.06em;
+  padding: 0.5rem 1rem; cursor: pointer; background: transparent;
+  border: 1px solid var(--border); color: var(--dim); transition: all 0.2s;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.chain-btn:hover { border-color: var(--muted); color: var(--muted); }
+.chain-btn.active { border-color: var(--red); color: var(--white); cursor: default; }
+.chain-btn .cbtag {
+  font-size: 0.62rem; border: 1px solid currentColor; padding: 0.05rem 0.35rem;
+  opacity: 0.75; text-transform: uppercase;
+}
+
+/* Persistent testnet reminder — closes content/marketing/design findings H5,
+   M2, M2 together (2026-08-19). NOT the small `sec-chain-tag` qualifier in
+   the security section; this renders wherever the chain picker does, so the
+   reminder is visible without scrolling to security. Hidden entirely when
+   networkLabel is null (mainnet chains carry no qualifier by design). */
+.testnet-band {
+  font-size: 0.72rem; letter-spacing: 0.03em; color: #ffcc00;
+  border: 1px solid #ffcc00; background: rgba(255,204,0,0.06);
+  padding: 0.5rem 0.85rem; margin-bottom: 1.5rem; max-width: fit-content;
+}
+
 /* ── STATS BAR ──────────────────────────────────────────────── */
 .stats-bar { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 1.5rem 0; margin-bottom: 5rem; }
-.stats-bar .container { display: flex; gap: 3rem; flex-wrap: wrap; justify-content: space-between; }
+.stats-bar .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 3rem; }
 .stat-val { font-size: 1.4rem; font-weight: 700; color: var(--red); }
 .stat-lbl { font-size: 0.7rem; color: var(--dim); letter-spacing: 0.12em; margin-top: 0.2rem; }
 .stat-note { font-size: 0.65rem; color: var(--dim); margin-top: 0.15rem; }
@@ -187,7 +217,7 @@ footer a:hover { color: var(--muted); }
 .wallet-close:hover { border-color: var(--muted); color: var(--muted); }
 
 /* ── UTILITY ─────────────────────────────────────────────────── */
-.d-none       { display: none; }
+.d-none       { display: none !important; }
 .mt-xs        { margin-top: 0.5rem; }
 .mt-sm        { margin-top: 0.75rem; }
 .mt-lg        { margin-top: 1.5rem; }
@@ -202,7 +232,7 @@ footer a:hover { color: var(--muted); }
 .input-col    { flex-direction: column; gap: 0.75rem; margin-top: 0.75rem; }
 
 /* ── SECURITY SECTION ───────────────────────────────────────── */
-.sec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.sec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
 .sec-panel { display: flex; flex-direction: column; }
 .sec-label-inner { font-size: 0.78rem; color: var(--white); margin-bottom: 1rem; }
 
@@ -245,7 +275,9 @@ footer a:hover { color: var(--muted); }
   border: 1px solid var(--border);
   background: var(--panel);
   padding: 2rem;
+  margin-bottom: 1.5rem;
 }
+.team-card:last-child { margin-bottom: 0; }
 .team-name {
   font-size: 1rem;
   font-weight: 700;
@@ -304,3 +336,16 @@ footer a:hover { color: var(--muted); }
   .sec-mini-grid { grid-template-columns: 1fr; }
   .sec-guarantee { grid-template-columns: 1fr; }
 }
+
+/* Lead paragraph under a section heading. Added 2026-08-19 for #protocols —
+   the existing .about-card p is grid-scoped and .note is a 0.7rem footnote,
+   so neither fits a section intro. */
+.section-intro { font-size: 0.85rem; color: var(--muted); line-height: 1.7; max-width: 62ch; margin-bottom: 2rem; }
+.text-center  { text-align: center; }
+.section-intro-center { margin-left: auto; margin-right: auto; }
+
+/* ── /protocols.html — compact hero (no inline styles; CSP has no
+   'unsafe-inline' on style-src-attr, so a style="" attribute is silently
+   dropped by the browser, not merely bad practice) ────────────────────── */
+.hero-compact { min-height: auto; padding: 5rem 0 3rem; }
+.hero-compact h1 { font-size: clamp(1.8rem, 4.2vw, 3rem); }

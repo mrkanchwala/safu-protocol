@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAFU — For Protocols & Ecosystems</title>
+<meta name="description" content="Deploy a SAFU-powered pool for your own users' wallets, or one level up to protect the protocols built on your ecosystem from a bank run. Live on Ethereum mainnet and Stellar testnet.">
+<link rel="canonical" href="https://safustaking.com/protocols.html">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph / Link Preview -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://safustaking.com/protocols.html">
+<meta property="og:site_name" content="SAFU Protocol">
+<meta property="og:title" content="SAFU — For Protocols & Ecosystems">
+<meta property="og:description" content="Deploy a SAFU-powered pool for your own users' wallets, or one level up to protect the protocols built on your ecosystem from a bank run. Live on Ethereum mainnet and Stellar testnet.">
+<meta property="og:image" content="https://safustaking.com/og-image.png?v=2">
+
+<!-- X-Frame-Options and X-Content-Type-Options are DELIBERATELY ABSENT here —
+     see the identical note in index.html. nginx sets both for real. -->
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'self';
+           script-src 'self' https://fonts.googleapis.com;
+           style-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;
+           font-src https://fonts.gstatic.com;
+           connect-src 'self';
+           img-src 'self' data:;
+           base-uri 'self'; form-action 'self';">
+<!-- frame-ancestors deliberately absent from this meta tag — it is
+     header-only and browsers ignore it in <meta> entirely (identical reason
+     X-Frame-Options is absent from index.html's meta CSP). nginx would need
+     to set it for real if this page ever needs framing protection beyond
+     what X-Frame-Options already provides at the server level. -->
+
+<link rel="stylesheet" href="css/styles.css?v=32">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────────────── -->
+<nav>
+  <div class="container">
+    <a href="/" class="logo">
+      <img src="logo.png" alt="SAFU" class="nav-logo-img">
+    </a>
+    <div class="nav-links">
+      <a href="/" class="nav-hide">home</a>
+      <a href="/#stake" class="nav-hide">stake</a>
+      <a href="/#security" class="nav-hide">security</a>
+      <a href="/whitepaper.html" target="_blank" rel="noopener noreferrer" class="nav-hide nav-hide-md">whitepaper</a>
+      <a href="/feedback.html" class="nav-hide nav-hide-md">feedback</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────────────── -->
+<!-- Copy sourced from the LOCKED 0xLabs intake identity
+     (outputs/2026-08-03_content-safu-0xlabs-form-copy.md — "Final draft" /
+     Blurb, Mission, and the Preliminary-3 cross-chain answer), not
+     improvised. Two distinct audiences, not one generic "for protocols"
+     pitch — Model 1 has always been two tracks: a business protecting its
+     OWN users' wallets, and an ecosystem protecting the PROTOCOLS built on
+     it. The original single-track draft of this page flattened that. -->
+<section class="hero hero-compact">
+  <div class="container">
+    <h1>
+      Run this pool<br>
+      under your <span class="red">own name.</span>
+    </h1>
+    <p class="hero-sub">
+      SAFU gives protocols, wallet providers, and platforms holding user funds a way to protect their users, individuals or autonomous agents alike, from phishing, approval exploits, and key compromise. An ecosystem can deploy the same pool one level up, protecting the protocols built on it instead — when one is hacked, the payout goes to the protocol itself, fast enough to stop a bank run before it starts. Neither flow has a vote or a claim form, because the contract enforces the payout rule itself.
+    </p>
+  </div>
+</section>
+
+<!-- ── TRACK A — PROTOCOLS / WALLET PROVIDERS / PLATFORMS ──────────── -->
+<section id="whitelabel">
+  <div class="container">
+    <div class="section-label"><span>//</span> 01 — for protocols, wallet providers &amp; platforms</div>
+    <h2>Protect your own users' wallets.</h2>
+    <p class="section-intro">You hold your users' funds, or your users hold their own wallet through your product. A verified drain triggers an automatic payout, up to a fixed multiple of the stake, sized to the wallet's risk tier and never more than the loss itself.</p>
+    <div class="about-body">
+      <div class="about-card">
+        <h3>[ 01 ] Your pool, your brand.</h3>
+        <p>Your users stake through your product and the pool carries your name. The audited engine underneath is ours, so you ship coverage without building a claims system to run it.</p>
+      </div>
+      <div class="about-card">
+        <h3>[ 02 ] Wallet-level loss covered.</h3>
+        <p>Phishing, approval exploits, and key compromise — the ways a wallet actually gets drained, covering wallets run by people and by autonomous agents alike.</p>
+      </div>
+      <div class="about-card">
+        <h3>[ 03 ] No vote, no claim form.</h3>
+        <p>The contract enforces the payout rule itself, and the same loss event always produces the same calculation. Nobody sits in a room deciding who deserves it.</p>
+      </div>
+      <div class="about-card">
+        <h3>[ 04 ] Nothing collected upfront.</h3>
+        <p>Your users pay no premium. A staker who claims forfeits their principal, and that forfeiture is what funds the payout.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TRACK B — ECOSYSTEMS / CHAINS / FOUNDATIONS ─────────────────── -->
+<hr class="section-divider">
+<section id="ecosystems">
+  <div class="container">
+    <div class="section-label"><span>//</span> 02 — for ecosystems &amp; chains</div>
+    <h2>Protect the protocols built on you.</h2>
+    <p class="section-intro">A chain or a foundation deploys one level up — a pool that covers the protocols built on that ecosystem, not their end-users directly. It works like a reserve ratio: when a protocol in the pool is hacked, the payout goes to the protocol itself, deterministically and fast, so it can absorb the loss and keep honoring withdrawals. End-users are protected as a consequence of the protocol staying solvent, not as a separate direct claim.</p>
+    <div class="about-body">
+      <div class="about-card">
+        <h3>[ 01 ] Stops a bank run before it starts.</h3>
+        <p>The payout lands fast enough that the protocol keeps honoring withdrawals, so its users never see a locked balance.</p>
+      </div>
+      <div class="about-card">
+        <h3>[ 02 ] Protocol-level exploits covered.</h3>
+        <p>Oracle and governance manipulation — the vectors an audit checks for but cannot insure against once one slips through.</p>
+      </div>
+      <div class="about-card">
+        <h3>[ 03 ] Member protocols stake in, not the ecosystem alone.</h3>
+        <p>Protocols in the pool stake into a shared reserve, with optional seed capital from the launching ecosystem — the same forfeiture-funded mechanism as the wallet-level pools, one level up.</p>
+      </div>
+      <div class="about-card">
+        <h3>[ 04 ] Isolated per deployment.</h3>
+        <p>Each pool is its own contract instance, capitalized independently. A new partner's pool never exposes another partner's stakers.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DEPLOY ON DEMAND ─────────────────────────────────────────────── -->
+<!-- Reframed 2026-08-19 per founder direction: don't present Ethereum +
+     Stellar as the boundary of what SAFU supports — an ecosystem on a third
+     chain reading "we only do 2 chains" hears "not for us." Lead with the
+     capability (the mechanism ports, proven across two very different
+     execution models), name the two live deployments as EVIDENCE of that,
+     and make the ask (bring us your chain) explicit, without promising a
+     specific timeline SAFU doesn't control. -->
+<hr class="section-divider">
+<section id="multichain">
+  <div class="container">
+    <div class="section-label"><span>//</span> 03 — deploy on your chain</div>
+    <h2>Built once, ported per chain.</h2>
+    <p class="section-intro">
+      The engine already runs across two very different execution models — Ethereum's EVM and Stellar's Soroban — with the same deterministic mechanism underneath both. That is the proof it ports, not the limit of where it can go. A new chain is a deployment, backed by a chain-specific audit, not a rebuild. Bring us your ecosystem and we scope what it takes to run a pool there.
+    </p>
+  </div>
+</section>
+
+<!-- ── MODEL 3 — AUDIT POOLS (brief future mention, founder decision 2026-08-19: -->
+<!-- "Model 3 stays a brief future mention" — not active, not scoped, not sold  -->
+<!-- today. Kept short and clearly deferred rather than pitched as available. -->
+<hr class="section-divider">
+<section id="audit-pools">
+  <div class="container">
+    <div class="section-label"><span>//</span> 04 — looking further out</div>
+    <h2>A future model: audit pools.</h2>
+    <p class="section-intro">
+      Longer term, SAFU intends to let a protocol fund an audit and a coverage pool at once: instead of paying a one-time audit fee, the protocol deposits into a pool SAFU reviews and sizes, and that same pool pays users back if a bug slips through. This is not built or scoped today; it is the direction after the two models above prove out.
+    </p>
+  </div>
+</section>
+
+<!-- ── CTA ──────────────────────────────────────────────────────── -->
+<hr class="section-divider">
+<section id="get-in-touch">
+  <div class="container text-center">
+    <div class="section-label"><span>//</span> 05 — get in touch</div>
+    <h2>Tell us about your pool.</h2>
+    <p class="section-intro section-intro-center">
+      Whitelabel deployment is a conversation, not a self-serve form — pricing and scope are set per partner. Reach out and we'll walk through what a pool under your name looks like.
+    </p>
+    <a id="btn-bd-intake" class="btn btn-cyan"
+       href="https://docs.google.com/forms/d/e/1FAIpQLSefYrJjgxzJrHJe59U7BFottI7KrQMwgiq_txmShbxBBmWk9w/viewform"
+       target="_blank" rel="noopener noreferrer">[ get in touch ]</a>
+  </div>
+</section>
+
+<!-- ── FOOTER ───────────────────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <span>SAFU — System Assurances, F**k You</span>
+      <a href="/">safustaking.com</a>
+      <a href="/whitepaper.html" target="_blank" rel="noopener noreferrer">whitepaper</a>
+      <a href="/feedback.html">feedback</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

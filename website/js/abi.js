@@ -24,6 +24,18 @@ window.SAFU_ABI = [
   // Constants
   "function STAKE_MIN() view returns (uint256)",
   "function STAKE_MAX() view returns (uint256)",
+  "function MAX_POOL_ETH() view returns (uint256)",
+
+  // Pre-flight reads. stakeETH() has 10 requires; before 2026-08-19 the UI
+  // checked 3, so a user could pay mainnet gas for a guaranteed revert six
+  // different ways (pool full, pool cap, zero beneficiary, beneficiary equal
+  // to oracle/owner/coSigner, or a paused pool). All verified public in
+  // contracts/SAFUPoolV8.sol.
+  "function paused() view returns (bool)",
+  "function maxPoolSize() view returns (uint256)",
+  "function oracle() view returns (address)",
+  "function coSigner() view returns (address)",
+  "function owner() view returns (address)",
 
   // Events
   "event Staked(address indexed wallet, uint256 amount)",

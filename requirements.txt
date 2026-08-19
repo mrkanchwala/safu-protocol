@@ -1,0 +1,56 @@
+# SAFU backend — pinned runtime dependencies
+#
+# Added 2026-08-17 (post-7a audit remediation). Before this the repository had
+# NO requirements file, lockfile, pyproject or setup.py of any kind, so:
+#   * dependency resolution was not reproducible between this host and the VPS,
+#   * `pip-audit` could only scan whatever happened to be in the ambient
+#     interpreter rather than the project's actual dependency set, and
+#   * the Rust side was fully pinned via Cargo.lock while the Python side that
+#     signs claim approvals and talks to the oracle KMS was not pinned at all.
+#
+# Versions below are the ones the 7a audit was actually executed and verified
+# against (24/24 tests green on this set) — captured from the working
+# interpreter, not chosen from latest-on-PyPI.
+#
+# DERIVED from real imports across api/, safu/ and scripts/, not from
+# `pip freeze` (which would bake in every unrelated package on the machine).
+#
+# Exact pins (==) rather than ranges: this service signs payout approvals, so a
+# silent transitive upgrade is not an acceptable failure mode. Bump
+# deliberately, re-run the suite, and record it.
+
+# --- Web framework / server ---
+fastapi==0.128.8
+uvicorn==0.40.0
+pydantic==2.12.5
+slowapi==0.1.10
+
+# --- HTTP clients ---
+httpx==0.28.1
+requests==2.34.2
+certifi==2026.1.4
+
+# --- Storage ---
+redis==7.4.0
+
+# --- Config ---
+python-dotenv==1.2.1
+
+# --- Ethereum / EVM ---
+eth-abi==6.0.0b1
+eth-account==0.13.7
+eth-keys==0.7.0
+eth-utils==5.3.1
+
+# --- Crypto primitives ---
+pycryptodome==3.23.0
+safe-pysha3==1.0.5
+
+# --- Stellar / Soroban (Tranche 2) ---
+stellar-sdk==15.0.0
+
+# --- Solana (scanner_multichain) ---
+solders==0.26.0
+
+# --- AWS KMS (oracle signing key) ---
+boto3==1.43.72
