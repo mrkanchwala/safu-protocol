@@ -108,6 +108,10 @@
       <span class="wp-nav-num">// 08</span>
       Legal
     </button>
+    <button class="wp-nav-btn" data-target="stakers">
+      <span class="wp-nav-num">// 09</span>
+      Before You Stake
+    </button>
   </aside>
 
   <!-- MAIN CONTENT -->
@@ -439,6 +443,82 @@
         <p>No SAFU token exists today, and none is being offered. If one is introduced alongside the deferred models described in the Roadmap, it would be a utility token conferring governance rights and access to protocol functions, not a security under any jurisdiction. This assertion does not constitute legal advice.</p>
         <p>This whitepaper is for informational purposes only. Nothing in it constitutes a solicitation, offer, or commitment to enter any transaction.</p>
         <p>Protocol operates under BUSL-1.1 license. Source: <a href="https://github.com/mrkanchwala/safu-protocol" target="_blank" rel="noopener noreferrer">github.com/mrkanchwala/safu-protocol ↗</a></p>
+      </div>
+    </div>
+
+    <!-- 09 BEFORE YOU STAKE — public pre-stake disclosure. Deliberately
+         chain-agnostic: no wallet names, no chain names, no per-pool figures,
+         so a new deployment does not require editing this section. Stake
+         limits are pointed at the stake screen rather than stated here for
+         the same reason. Carries the document footer note, which moved here
+         from the Legal slide when this section was appended. -->
+    <div class="wp-slide" id="stakers">
+      <div class="wp-slide-header">
+        <div class="section-label">// 09</div>
+        <h2>Before You Stake</h2>
+      </div>
+      <div class="wp-body">
+        <p>Everything below is enforced by the contract. Read it before you stake.</p>
+
+        <h3>Your beneficiary</h3>
+        <ul>
+          <li>You name a beneficiary when you stake, and it has to be a different address from the one you stake with. The contract rejects a stake that names itself.</li>
+          <li>The beneficiary is where your money goes. Both a claim payout and an ordinary withdrawal are sent there, so choose an address you control and can still reach later.</li>
+          <li>You sign every action from your staking wallet, and the funds arrive at the beneficiary.</li>
+          <li>You can change the beneficiary later from the same wallet you staked with.</li>
+          <li>Staking from a hot wallet while naming a cold wallet as beneficiary is supported, and it is the safer setup.</li>
+        </ul>
+
+        <h3>Staking and withdrawing</h3>
+        <ul>
+          <li>Connect a wallet the pool supports. The stake screen shows the minimum and maximum for the pool you are joining, and each pool is denominated in its own chain's native asset.</li>
+          <li>You can withdraw at any time while no claim of yours is open, and your full principal is sent to your beneficiary.</li>
+          <li>If the pool is ever paused, you can exit directly to your own staking wallet without waiting.</li>
+        </ul>
+
+        <h3>Filing a claim</h3>
+        <ul>
+          <li>A claim must be filed within 30 days of the incident.</li>
+          <li>If you have been staked for less than 90 days, your claim is still recorded. It is held until you reach 90 days, and nothing is forfeited while it waits.</li>
+          <li>Once you pass 90 days, you have 100 days to approve your own claim. If you do not, the claim expires, the reserved amount returns to the pool, and your stake stays yours.</li>
+        </ul>
+
+        <h3>Getting paid</h3>
+        <ul>
+          <li>After a claim activates there is a 7 day cooldown before anything can be paid.</li>
+          <li>Payment is then released steadily over 45 days. You collect it by signing from your staking wallet, and it arrives at your beneficiary.</li>
+          <li>The next collection always pays everything accumulated since the last one, so collecting weekly and collecting monthly reach the same total.</li>
+          <li>Collect at least once every 100 days. If a claim goes that long with no collection, anyone can close it and whatever you have not collected returns to the pool. Each collection resets the window, and since payment finishes releasing at day 45, one collection before the deadline gets you everything.</li>
+          <li>Each collection is its own transaction, so you can check every one on a block explorer.</li>
+          <li>The pool has a daily limit on total payouts, which can spread a single day's collection. It does not reduce the total you are owed.</li>
+        </ul>
+
+        <h3>Points</h3>
+        <ul>
+          <li>Staking earns points over time.</li>
+          <li>When a claim activates, your entire points balance burns, not just a portion of it.</li>
+        </ul>
+
+        <h3>What a paid claim costs you</h3>
+        <ul>
+          <li>When a claim pays out, the principal you staked stays in the pool permanently. That forfeited principal is what funds payouts, and it is why there is no premium and no fee to stake.</li>
+        </ul>
+
+        <h3>If you think the result is wrong</h3>
+        <ul>
+          <li>Assessment is automated. No person decides whether your loss qualifies, and a valid claim never waits on someone's approval.</li>
+          <li>If a claim is rejected and you believe that is wrong, use the feedback form in the top navigation to ask for a human review.</li>
+          <li>Approving a claim that way takes two separate signers, so no single person can authorise a payout alone.</li>
+          <li>A human review is a way to correct a rejection in your favour.</li>
+        </ul>
+
+        <h3>If a claim is found fraudulent</h3>
+        <ul>
+          <li>A claim that has activated can be reversed if it turns out to be fraudulent or a false positive.</li>
+          <li>Your stake is restored, and it is then locked for 365 days before it can be withdrawn.</li>
+          <li>A claim still waiting on the 90 day mark carries no such lock, because nothing was forfeited yet.</li>
+        </ul>
+
         <p class="wp-footer-note">
           SAFU — System Assurances, F**k You. &nbsp;·&nbsp;
           <a href="/">safustaking.com</a> &nbsp;·&nbsp;
