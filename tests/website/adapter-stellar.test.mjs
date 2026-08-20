@@ -251,7 +251,9 @@ t('contract() actually constructs a Contract — the `new` binds to the right th
   // against the real SDK ("Class constructor cannot be invoked without 'new'").
   const c = A.contract();
   ok(c instanceof window.StellarSdk.Contract, 'expected a StellarSdk.Contract instance');
-  eq(c.contractId(), CON);
+  // Live config value, NOT the CON fixture above — CON is a fixed, externally
+  // hashed test vector (see CON_HASH) unrelated to which contract is deployed.
+  eq(c.contractId(), window.CONFIG.CHAINS.stellar.contract);
 });
 
 t('server() constructs an rpc.Server pointed at the configured RPC', () => {

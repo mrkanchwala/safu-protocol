@@ -201,13 +201,12 @@ window.CONFIG = {
       // account (G…): a contract address is not a valid transaction source.
       simulationSource: 'GCZOUSNCY4TRCPQHP4IN2JEF4TVUMKGAZ6HNUXKIUWPMZJHJ7RA7A2UD',
 
-      // ⚠ TRANCHE 1 CONTRACT — founder-approved placeholder to unblock D3.
-      // Deployed 2026-07-29, predates the T2 changes merged 2026-08-17. Its
-      // live spec was read from the network 2026-08-19: the flow this UI uses
-      // (stake / withdraw / claim_stream / get_stake / is_paused) is IDENTICAL
-      // in T1 and T2 — T2 only ADDS getters — so the adapter targets T2
-      // semantics and works against both. Swap the address at redeploy.
-      contract:     'CCQT2VRONZTE5ODBNM3XAQWUPQRLKGMU4MMLA2JK6HJHJMK34Q7ZFTGJ',
+      // TRANCHE 2 CONTRACT — deployed 2026-08-20 (D4 Step 6), replacing the T1
+      // placeholder used to unblock D3. Constructed via `/ship` with the
+      // locked config: real AWS KMS oracle, treasury set at Step 7. No vault
+      // yet — that lands at Step 13, which is why `disclosures` below stays
+      // empty until then.
+      contract:     'CDTXVIA4TSQ6PY76VFD4BBW4R4UMGSE5HTBNAMASAPRYRNV37DBDJJBB',
 
       // Native XLM SAC, read from the deployed contract's instance storage
       // (DataKey::XlmToken) rather than assumed from a docs table.
@@ -306,9 +305,11 @@ window.CONFIG = {
         langLine: 'Rust 2021 · soroban-sdk 27.0.0 · Apache-2.0',
       },
 
-      // EMPTY until the T2 redeploy. T1 has no yield integration at all, so
-      // rendering "your XLM goes into a DeFindex vault" against this contract
-      // would be an inaccurate disclosure — worse than none.
+      // EMPTY until D4 Step 13 deploys SAFU's own DeFindex vault and calls
+      // set_vault. Live-confirmed 2026-08-20 (Step 7): get_vault() on the
+      // T2 contract already returns null — the contract itself has no yield
+      // integration wired yet, so rendering "your XLM goes into a DeFindex
+      // vault" here would still be an inaccurate disclosure — worse than none.
       disclosures: [],
 
       // See the matching Ethereum comment for why these exist. Updated
