@@ -370,3 +370,23 @@ footer a:hover { color: var(--muted); }
    dropped by the browser, not merely bad practice) ────────────────────── */
 .hero-compact { min-height: auto; padding: 5rem 0 3rem; }
 .hero-compact h1 { font-size: clamp(1.8rem, 4.2vw, 3rem); }
+
+/* Pre-stake disclosure link (whitepaper section 09), added 2026-08-20.
+   Deliberately NOT reusing .sec-ext-link: that class is for tertiary
+   footnotes (its other use is "etherscan verified" inside a security
+   mini-card), and it carries no underline, so a link a staker should read
+   before committing funds rendered as anonymous grey text. Spacing was also
+   inverted when measured on the live page: 48px below the h2 it belongs to
+   and 2px off the terminal card's top edge, so it read as attached to the
+   card. The heading's bottom margin is pulled in and the gap moved below. */
+#stake h2:has(+ .stake-disclosure-link) { margin-bottom: 0.6rem; }
+.stake-disclosure-link {
+  display: inline-block;
+  margin: 0 0 2.25rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px solid var(--dim);
+  transition: color 0.2s, border-color 0.2s;
+}
+.stake-disclosure-link:hover { color: var(--white); border-color: var(--muted); }

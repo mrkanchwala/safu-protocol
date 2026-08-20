@@ -70,7 +70,7 @@
            img-src 'self' data: https://imagedelivery.net https://registry.walletconnect.com;
            frame-src https://verify.walletconnect.org;">
 
-<link rel="stylesheet" href="css/styles.css?v=36">
+<link rel="stylesheet" href="css/styles.css?v=37">
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="apple-touch-icon" href="logo.png">
 </head>
@@ -179,7 +179,7 @@
   <div class="container">
     <div class="section-label"><span>//</span> 01 — stake</div>
     <h2>How staking works.</h2>
-    <a href="/whitepaper.html#stakers" target="_blank" rel="noopener noreferrer" class="sec-ext-link">before you stake ↗</a>
+    <a href="/whitepaper.html#stakers" target="_blank" rel="noopener noreferrer" class="stake-disclosure-link">before you stake ↗</a>
 
     <div class="terminal">
       <div class="terminal-bar">
@@ -208,7 +208,7 @@
             <input class="term-input" id="input-beneficiary" type="text" placeholder="0x... beneficiary address" autocomplete="off" spellcheck="false" />
           </div>
           <div class="status-box warn show mt-sm">
-            ⚠ Do not enter your own staker wallet as beneficiary — payouts will be unclaimable. Use a separate cold wallet or trusted address.
+            ⚠ The beneficiary must be different from the wallet you stake with. The contract rejects the stake otherwise, so use a separate cold wallet or an address you trust.
           </div>
           <div class="status-box err mt-xs" id="status-beneficiary-match">
             ✗ Beneficiary matches your staker wallet — change this before proceeding.
@@ -556,25 +556,25 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- Load order matters: config (data) → abi → state → adapters → chain
      (resolver, needs adapters registered) → everything that consumes them. -->
-<script src="js/config.js?v=36"></script>
-<script src="js/abi.js?v=36"></script>
-<script src="js/state.js?v=36"></script>
-<script src="js/loader.js?v=36"></script>
-<script src="js/adapter-evm.js?v=36"></script>
-<script src="js/adapter-stellar.js?v=36"></script>
-<script src="js/chain.js?v=36"></script>
-<script src="js/ui.js?v=36"></script>
-<script src="js/chain-ui.js?v=36"></script>
-<script src="js/init.js?v=36"></script>
+<script src="js/config.js?v=37"></script>
+<script src="js/abi.js?v=37"></script>
+<script src="js/state.js?v=37"></script>
+<script src="js/loader.js?v=37"></script>
+<script src="js/adapter-evm.js?v=37"></script>
+<script src="js/adapter-stellar.js?v=37"></script>
+<script src="js/chain.js?v=37"></script>
+<script src="js/ui.js?v=37"></script>
+<script src="js/chain-ui.js?v=37"></script>
+<script src="js/init.js?v=37"></script>
 <!-- Connectors before wallet.js: wallet.js resolves them by family at
      modal-open time, and connector-evm starts EIP-6963 discovery on load. -->
-<script src="js/connector-evm.js?v=36"></script>
-<script src="js/connector-stellar.js?v=36"></script>
-<script src="js/wallet.js?v=36"></script>
-<script src="js/stake.js?v=36"></script>
-<script src="js/claim.js?v=36"></script>
-<script src="js/stream.js?v=36"></script>
-<script src="js/events.js?v=36"></script>
+<script src="js/connector-evm.js?v=37"></script>
+<script src="js/connector-stellar.js?v=37"></script>
+<script src="js/wallet.js?v=37"></script>
+<script src="js/stake.js?v=37"></script>
+<script src="js/claim.js?v=37"></script>
+<script src="js/stream.js?v=37"></script>
+<script src="js/events.js?v=37"></script>
 
 </body>
 </html>
