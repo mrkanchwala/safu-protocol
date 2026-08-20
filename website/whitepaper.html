@@ -532,6 +532,12 @@
   </main>
 </div>
 
-<script src="js/whitepaper.js" defer></script>
+<!-- Versioned 2026-08-20. This was the only asset on the site without a ?v=
+     query, which went unnoticed because the file had not changed since May.
+     The first change to it deployed to origin correctly and Cloudflare kept
+     serving the May copy for four hours (cf-cache-status HIT, max-age=14400),
+     so the new deep-link routing was live and broken. Bump this on any future
+     edit to js/whitepaper.js. -->
+<script src="js/whitepaper.js?v=1" defer></script>
 </body>
 </html>
