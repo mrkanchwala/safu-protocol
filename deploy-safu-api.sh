@@ -21,12 +21,19 @@ if ! ssh "$VPS" "grep -q 'FALLBACK_RPC_URL' ~/safu-verify/.env 2>/dev/null"; the
 fi
 
 echo "==> [safu-api] Syncing api/ → VPS ~/safu-verify/api/"
-rsync -avz --exclude='__pycache__' --exclude='*.pyc' \
+# --delete added 2026-08-26. Without it, a file renamed or removed locally
+# persisted on the server indefinitely and could still satisfy an import, so the
+# deployed tree could drift from the source tree with nothing to show for it.
+# Verified with --dry-run before enabling: nothing was pending deletion.
+# NOTE the trailing slashes are load-bearing -- these sync directory CONTENTS,
+# and the cache directory lives outside both trees, so no cache is ever removed
+# by this.
+rsync -avz --delete --exclude='__pycache__' --exclude='*.pyc' \
   "$SCRIPT_DIR/api/" "$VPS:/home/murtaza/safu-verify/api/" > /tmp/deploy-safu-api.log 2>&1
 echo "    rsync api/: ok ($(wc -l < /tmp/deploy-safu-api.log) files transferred)"
 
 echo "==> [safu-api] Syncing safu/ → VPS ~/safu-verify/safu/"
-rsync -avz --exclude='__pycache__' --exclude='*.pyc' \
+rsync -avz --delete --exclude='__pycache__' --exclude='*.pyc' \
   "$SCRIPT_DIR/safu/" "$VPS:/home/murtaza/safu-verify/safu/" >> /tmp/deploy-safu-api.log 2>&1
 echo "    rsync safu/: ok"
 
