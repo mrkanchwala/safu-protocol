@@ -241,16 +241,16 @@
         <h2>How It Works</h2>
       </div>
       <div class="wp-body">
-        <p>A wallet stakes into the pool to enroll, within the range that pool sets. Enrollment is permissionless — no oracle approval required. The wallet's tier is assessed at claim time, not at staking. Tier determines the coverage multiplier applied to the staked amount.</p>
+        <p>A wallet stakes into the pool to enroll, within the range that pool sets. Enrollment is permissionless — no oracle approval required. The wallet's tier is assessed at claim time, not at staking. Tier sets the <strong>maximum</strong> coverage a claim can pay against the staked amount. It is a ceiling, not a fixed amount: a verified claim pays up to that multiple, and never more. What a specific claim pays within that ceiling depends on the verified loss.</p>
       </div>
 
       <div class="wp-table-wrap">
         <table class="wp-table">
-          <thead><tr><th>Tier</th><th>Coverage multiplier</th><th>Wallet profile</th></tr></thead>
+          <thead><tr><th>Tier</th><th>Maximum coverage</th><th>Wallet profile</th></tr></thead>
           <tbody>
-            <tr><td><strong>A</strong></td><td>15x</td><td>Clean history, low risk signals</td></tr>
-            <tr><td><strong>B</strong></td><td>10x</td><td>Mixed history, moderate signals</td></tr>
-            <tr><td><strong>C</strong></td><td>5x</td><td>Higher risk signals detected</td></tr>
+            <tr><td><strong>A</strong></td><td>up to 15x</td><td>Clean history, low risk signals</td></tr>
+            <tr><td><strong>B</strong></td><td>up to 10x</td><td>Mixed history, moderate signals</td></tr>
+            <tr><td><strong>C</strong></td><td>up to 5x</td><td>Higher risk signals detected</td></tr>
           </tbody>
         </table>
       </div>
