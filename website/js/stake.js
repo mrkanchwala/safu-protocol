@@ -122,6 +122,71 @@ window.SAFU.stake = (() => {
     }
   }
 
+  // Withdraw — the contract's own guards (stake.rs:231-254) are the real
+  // backstop: no stake, already withdrawn, an active claim, or a penalty
+  // lock all revert on-chain regardless of what this precheck says. This
+  // exists only so a user isn't asked to sign a transaction that's certain
+  // to fail — same spirit as preflightStake, kept inline since the checks
+  // are simple enough not to need a shared adapter method.
+  async function handleWithdraw() {
+    if (!S.walletAddress) return;
+
+    const a = window.SAFU.adapter();
+
+    const beneficiary = window.SAFU.ui.getBene(S.walletAddress, a.id)
+      || document.getElementById('input-beneficiary')?.value.trim();
+    if (!a.isValidAddress(beneficiary)) {
+      showStatus('status-withdraw', 'err', 'No beneficiary on record for this wallet — enter the address you staked with.');
+      return;
+    }
+
+    document.getElementById('btn-withdraw').disabled = true;
+    showStatus('status-withdraw', 'info', loader('Checking stake state'));
+
+    try {
+      const rec = await a.readStakeRecord(S.walletAddress);
+
+      if (!rec.exists || rec.amountRaw <= 0n) {
+        showStatus('status-withdraw', 'err', 'No active stake found for this wallet.');
+        return;
+      }
+      if (rec.withdrawn) {
+        showStatus('status-withdraw', 'err', 'This stake has already been withdrawn.');
+        return;
+      }
+      if (rec.claimActive) {
+        showStatus('status-withdraw', 'err', 'This wallet has an active claim — the stake was forfeited to fund it, there is nothing left to withdraw.');
+        return;
+      }
+      if (rec.penaltyLockLabel) {
+        showStatus('status-withdraw', 'err', `Withdrawal is locked until ${window.SAFU.ui.esc(rec.penaltyLockLabel)} (a prior claim was cancelled as a false positive).`);
+        return;
+      }
+
+      showStatus('status-withdraw', 'info', loader('Sending transaction'));
+      const sent = await a.sendWithdraw({ beneficiary });
+
+      showStatus('status-withdraw', 'info',
+        `${loader('Waiting for confirmation')}<br>> tx: ${window.SAFU.ui.esc(sent.hash)}`);
+
+      const { blockRef } = await sent.confirm();
+      showStatus('status-withdraw', 'ok',
+        `> withdrawn ✓\n> tx: ${window.SAFU.ui.esc(sent.hash)}\n> ${a.blockLabel}: ${blockRef}`);
+
+      window.SAFU.init.loadStakeStatus();
+
+    } catch (e) {
+      let msg = e.userMessage || e.message || 'Transaction failed';
+      if (e.code === 'ACTION_REJECTED' || msg.includes('user rejected'))
+        msg = 'Transaction cancelled.';
+      else if (msg.length > 120)
+        msg = msg.slice(0, 120) + '...';
+      showStatus('status-withdraw', 'err', `Error: ${window.SAFU.ui.esc(msg)}`);
+    } finally {
+      document.getElementById('btn-withdraw').disabled = false;
+    }
+  }
+
   function checkBeneficiary() {
     const val = (document.getElementById('input-beneficiary')?.value || '').trim();
     const box = document.getElementById('status-beneficiary-match');
@@ -132,5 +197,5 @@ window.SAFU.stake = (() => {
     box.classList.toggle('show', match);
   }
 
-  return { handleEnroll, handleStake, checkBeneficiary };
+  return { handleEnroll, handleStake, handleWithdraw, checkBeneficiary };
 })();

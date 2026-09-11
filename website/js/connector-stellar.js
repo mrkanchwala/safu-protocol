@@ -185,6 +185,48 @@ window.SAFU.connectors.stellar = (() => {
     return res.signedTxXdr;
   }
 
+  // ── WalletConnect (added 2026-09-11) ───────────────────────────────────
+  // Kept OUT of stellar-wallets-kit.bundle.js on purpose. The kit's
+  // wallet-connect module pulls @reown/appkit, which takes the shared bundle
+  // from 440 KB to 2.5 MB — measured, not estimated. Shipping that to every
+  // visitor to cover one wallet option is the wrong trade, so it lives in its
+  // own 2.1 MB bundle that is fetched ONLY when a user actually picks
+  // WalletConnect. Same on-demand pattern connector-evm.js:138 already uses
+  // for wc-provider.bundle.js.
+  //
+  // The kit's module does REAL Stellar signing, not just pairing — verified
+  // against the built bundle in Chromium: CAIP chains `stellar:pubnet` /
+  // `stellar:testnet`, methods `stellar_signXDR` / `stellar_signAndSubmitXDR`
+  // / `stellar_signMessage` / `stellar_signAuthEntry`, and the same
+  // ModuleInterface every other module here implements — so it flows through
+  // _connectVia() and signTransaction() with no special-casing.
+  let _wcModule = null;
+
+  async function _connectWC() {
+    const cfg = chainCfg();
+    if (!_wcModule) {
+      const { WalletConnectModule, WalletConnectTargetChain } =
+        await import('/js/stellar-wc.bundle.js');
+      _wcModule = new WalletConnectModule({
+        projectId: CONFIG.WALLETCONNECT_PROJECT_ID,
+        metadata: {
+          name:        'SAFU',
+          description: 'Stake into a SAFU pool and get covered.',
+          url:         'https://safustaking.com',
+          icons:       ['https://safustaking.com/favicon.svg'],
+        },
+        // Scoped to the chain actually selected — never both. A session
+        // negotiated for pubnet must not be reused to sign on testnet.
+        allowedChains: [
+          String(cfg.networkPassphrase || '').startsWith('Public')
+            ? WalletConnectTargetChain.PUBLIC
+            : WalletConnectTargetChain.TESTNET,
+        ],
+      });
+    }
+    return _connectVia(_wcModule, 'WalletConnect');
+  }
+
   return {
     family: 'stellar',
     ensureDeps,
@@ -195,16 +237,31 @@ window.SAFU.connectors.stellar = (() => {
       const checks = await Promise.all(
         Object.values(mods).map(async mod => ({ mod, ok: await _isAvailable(mod) }))
       );
-      return checks
+      const out = checks
         .filter(c => c.ok)
         .map(({ mod }) => ({
           name:    mod.productName,
           tag:     'extension',
           connect: () => _connectVia(mod, mod.productName),
         }));
+
+      // Always offered — unlike the extension modules there is nothing to
+      // detect, and it is the only path for a user with no Stellar extension
+      // installed at all (which is what emptyHint used to dead-end on).
+      out.push({
+        name:    'WalletConnect',
+        tag:     'LOBSTR · HOT · mobile',
+        connect: _connectWC,
+        // The user is mid-flow in WalletConnect's own overlay when this runs,
+        // so a failure should put the picker back rather than leave them on a
+        // bare page — same reasoning as connector-evm.js's WC entry.
+        reopenOnError: true,
+      });
+
+      return out;
     },
 
-    emptyHint: 'No Stellar wallet detected. Install Freighter, xBull, or another supported wallet, then reopen this dialog.',
+    emptyHint: 'No Stellar wallet detected. Install Freighter, xBull, or another supported wallet — or use WalletConnect to pair a mobile wallet.',
 
     disconnect() {
       // Most of these wallets have no programmatic disconnect — access is a
@@ -215,6 +272,12 @@ window.SAFU.connectors.stellar = (() => {
       if (mod && typeof mod.disconnect === 'function') {
         Promise.resolve(mod.disconnect()).catch(() => {});
       }
+      // WalletConnect is the one module here with a REAL session to end, and
+      // the cached instance holds it. Dropping the reference forces a fresh
+      // pairing next time instead of silently reusing a session the user just
+      // asked to end — the bundle itself stays cached by the browser, so this
+      // costs a re-init, not a re-download.
+      _wcModule = null;
       window.SAFU.state._stellarModule = null;
       window.SAFU.state._stellarWalletLabel = null;
     },

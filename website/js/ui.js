@@ -77,4 +77,24 @@ window.SAFU.ui = {
     localStorage.setItem(window.SAFU.ui.beneKey(address, chainId), beneficiary);
   },
 
+  // ── claim ID storage ───────────────────────────────────────────────────
+  // Same shape as beneficiary storage above. Without this, the claim ID
+  // shown once at submission time (claim.js) is unrecoverable if the user
+  // navigates away before the 7-day cooldown clears — they'd have no way
+  // to collect their payout except their own notes.
+
+  claimKey(address, chainId) {
+    return `safu_claim_${chainId}_${address}`;
+  },
+
+  getClaimId(address, chainId) {
+    if (!address) return null;
+    return localStorage.getItem(window.SAFU.ui.claimKey(address, chainId));
+  },
+
+  setClaimId(address, chainId, claimId) {
+    if (!address) return;
+    localStorage.setItem(window.SAFU.ui.claimKey(address, chainId), claimId);
+  },
+
 };

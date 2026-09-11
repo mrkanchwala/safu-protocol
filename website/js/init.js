@@ -113,8 +113,13 @@ window.SAFU.init = (() => {
         const box = document.getElementById('active-stake-box');
         const content = document.getElementById('active-stake-content');
         if (box && content) {
-          const { esc, getBene } = window.SAFU.ui;
+          const { esc, getBene, getClaimId } = window.SAFU.ui;
           const bene = getBene(S.walletAddress, a.id);
+          // Locally-persisted, not re-derived from chain (no get_claim reverse
+          // lookup exists yet — see the frontend eng review, item 4). This is
+          // only ever a claim ID this wallet itself submitted in this browser;
+          // absence here doesn't mean no claim exists, just that we can't show it.
+          const storedClaimId = getClaimId(S.walletAddress, a.id);
           content.innerHTML =
             `> active stake found<br>` +
             `> amount: ${esc(a.formatAmount(rec.amountRaw))} ${esc(a.assetSymbol)} &nbsp;|&nbsp; tier: assessed at claim<br>` +
@@ -122,9 +127,20 @@ window.SAFU.init = (() => {
             (daysSinceStake === null ? '' : `> days staked: ${daysSinceStake}`) +
             (isOG ? ' &nbsp;<span style="color:var(--cyan)">[ OG STAKER ]</span>' : '') +
             penaltyLocked +
-            `<br>> claim active: ${rec.claimActive ? '<span style="color:var(--red)">YES</span>' : 'no'}`;
+            `<br>> claim active: ${rec.claimActive ? '<span style="color:var(--red)">YES</span>' : 'no'}` +
+            (rec.claimActive && storedClaimId
+              ? `<br>> your claim id: ${esc(storedClaimId)}`
+              : '');
           box.style.removeProperty('display');
           box.style.display = 'block';
+
+          // Pre-fill the payout-collection field so a returning user doesn't
+          // have to retype what we already have saved for them — only if the
+          // field is empty, never overwrite something the user already typed.
+          const claimIdInput = document.getElementById('input-claim-id');
+          if (claimIdInput && !claimIdInput.value && storedClaimId) {
+            claimIdInput.value = storedClaimId;
+          }
         }
 
         const amountInput = document.getElementById('input-amount');

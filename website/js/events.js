@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   on('input-beneficiary',   'input', () => window.SAFU.stake.checkBeneficiary());
   on('btn-enroll',          'click', () => window.SAFU.stake.handleEnroll());
   on('btn-stake',           'click', () => window.SAFU.stake.handleStake());
+  on('btn-withdraw',        'click', () => window.SAFU.stake.handleWithdraw());
 
   // Claim section
   on('btn-scan',            'click', () => window.SAFU.claim.handleScan());

@@ -360,6 +360,20 @@ window.SAFU.adapters.stellar = function (cfg) {
       ]);
     },
 
+    // withdraw() takes no amount — it's always the full stake, and the
+    // contract's own guards (active-claim check, penalty-lock check, exact
+    // beneficiary-hash match) are the real gate. Mirrors stake.rs:231-254,
+    // read and confirmed 2026-09-11 during the T3 frontend eng review.
+    async sendWithdraw({ beneficiary }) {
+      const S = await ensureSdk();
+      const staker = window.SAFU.state.walletAddress;
+      if (!staker) throw new Error('SAFU: connect a wallet first');
+      return this._invoke('withdraw', [
+        S.Address.fromString(staker).toScVal(),
+        S.Address.fromString(beneficiary).toScVal(),
+      ]);
+    },
+
     async sendClaimStream({ claimId, beneficiary }) {
       const S = await ensureSdk();
       return this._invoke('claim_stream', [

@@ -10,6 +10,7 @@
 | `freighter-api.min.js` | `@stellar/freighter-api` | 6.0.1 | `freighterApi` | 10 KB | Apache-2.0 | `d797429cf97f9a67f1999910830a89dc01d565aedebafb651a11b1ed003a7e9d` |
 | `wc-provider.bundle.js` | `@walletconnect/ethereum-provider` | 2.19.2 | ES module export (`EthereumProvider`) | 599 KB (613,619 bytes) | Apache-2.0 | `b7b4aa997065450f33c2b647339c4b0a81921346e4db3655d7c39def362027d6` |
 | `stellar-wallets-kit.bundle.js` | `@creit.tech/stellar-wallets-kit` | 2.5.0 (7 modules only) | `SAFUStellarWalletModules` (IIFE) | 440 KB (450,677 bytes) | MIT | `ae49d0df2f393beec1e10e809b8599721b9e0577e6686fbb86bc4eddb95a2f06` |
+| `stellar-wc.bundle.js` | `@creit.tech/stellar-wallets-kit` | 2.5.0 (WalletConnect module only) | ES module exports (`WalletConnectModule`, `WalletConnectTargetChain`, `WalletConnectAllowedMethods`) | 2.1 MB (2,151,584 bytes) | MIT | `98971e1b07f87b14b3291926fd3628c790250031a2d098cbde23c374a8cd08a8` |
 
 `stellar-sdk.min.js` and `freighter-api.min.js` are published by the Stellar Development Foundation (`github.com/stellar/js-stellar-sdk`, `github.com/stellar/freighter`) and **already ship prebuilt UMD browser bundles**, so no bundler is involved for either.
 
@@ -80,7 +81,7 @@ Verify functionally before shipping — `node -e "import('./wc-provider.bundle.j
 
 **What's actually in the bundle:** only the SDK-level classes for Freighter, xBull, Albedo, Rabet, Lobstr, Hana, and Hot Wallet — each implementing the kit's uniform `ModuleInterface` (`isAvailable`/`getAddress`/`signTransaction`/`getNetwork`). No `StellarWalletsKit` static class, no `./components`, no WalletConnect module. `website/js/connector-stellar.js` wires these 7 modules directly into this site's own existing `.wallet-option` modal — not the kit's UI.
 
-**Stellar WalletConnect deliberately excluded**, not an oversight — same AppKit-bloat problem as EVM's WalletConnect, plus it would mean a second, separate WC session running alongside the EVM one. Revisit only as its own scoped decision, not bundled into a wallet-breadth pass.
+**Stellar WalletConnect was deliberately excluded from THIS bundle**, not an oversight — same AppKit-bloat problem as EVM's WalletConnect, plus it would mean a second, separate WC session running alongside the EVM one. That exclusion still stands for this file. **The scoped revisit it asked for happened 2026-09-11 and shipped as a SEPARATE on-demand bundle — see `stellar-wc.bundle.js` below.** This bundle is unchanged at 440 KB.
 
 **Build command:**
 ```bash
@@ -111,3 +112,73 @@ shasum -a 256 stellar-wallets-kit.bundle.js   # record in the table above
 **Verified via real Chromium (Playwright), not Node** — same reasoning as `adapter-stellar.test.mjs`'s existing real-SDK-bundle policy: a Node shim can't reproduce real browser globals these modules depend on internally, and did in fact throw a false `Cannot read properties of undefined` error when first tried in bare Node. Confirmed: all 7 modules load, expose the full interface, correct product names (`Freighter`, `xBull`, `Albedo`, `Rabet`, `LOBSTR`, `Hana Wallet`, `HOT Wallet`). Grepped the built output for `reown`, `appkit`, `ledger`, `trezor`, `@walletconnect` — all zero occurrences, confirming tree-shaking excluded them without needing to trust it.
 
 **Known timing asymmetry, live-tested with no extensions installed:** Freighter and Lobstr's `isAvailable()` hang past the kit's own documented 1000ms contract; xBull and Albedo correctly resolve `true` with nothing installed (both have a web-based/PWA path needing no extension — real availability, not a bug). `connector-stellar.js`'s `_isAvailable()` wraps every check in a 1200ms race so a slow module cannot stall the wallet list — see that file for the fix.
+
+## `stellar-wc.bundle.js` — added 2026-09-11, Stellar WalletConnect, loaded on demand
+
+**This is the scoped revisit the section above asked for.** Founder request: offer WalletConnect on
+Stellar, not just EVM. The blocking question was whether the kit's WC module does *real Stellar
+signing* or merely pairs at the protocol level — the 2026-08-19 note warned that "Stellar is on
+WalletConnect's supported chains" refers to a registered CAIP namespace, not a working adapter.
+
+**Verified before building.** The module genuinely signs Stellar:
+
+| | |
+|---|---|
+| CAIP chains | `stellar:pubnet`, `stellar:testnet` |
+| Methods | `stellar_signXDR`, `stellar_signAndSubmitXDR`, `stellar_signMessage`, `stellar_signAuthEntry` |
+| Interface | `implements ModuleInterface` — same `isAvailable`/`getAddress`/`signTransaction`/`getNetwork`/`disconnect` as the other 7 |
+
+The earlier concern was about **AppKit's own EVM adapter layer**. The kit talks to Stellar itself via
+`@walletconnect/sign-client`; `@reown/appkit` is used only for the QR modal UI. So the module works —
+the cost is the modal dependency, which is exactly what the size numbers below show.
+
+**Why a separate bundle, not merged into the 7-module one.** Measured, not estimated:
+
+| Build | Size |
+|---|---|
+| 7 modules (current, unchanged) | 440 KB |
+| 8 modules, WC merged in | **2.5 MB** (5.7×) |
+| WC alone, as its own bundle | 2.1 MB |
+
+Merging it would make every visitor download 2.5 MB to reach a stake form, to cover one wallet
+option. Splitting it keeps the base bundle at 440 KB and fetches the 2.1 MB chunk **only when a user
+actually clicks WalletConnect** — the same on-demand pattern `wc-provider.bundle.js` already uses on
+the EVM side (`connector-evm.js:138`). This is a true ES module with named exports, so it keeps
+`import()` for the same reason `wc-provider.bundle.js` does (see Loading strategy above — the
+UMD/`loadScript()` rule does not apply to it).
+
+**Build command:**
+```bash
+mkdir /tmp/swk-wc && cd /tmp/swk-wc
+npm init -y && npm install @creit.tech/stellar-wallets-kit@2.5.0 --no-save
+cat > entry-wc.js <<'EOF'
+export { WalletConnectModule, WalletConnectTargetChain, WalletConnectAllowedMethods }
+  from '@creit.tech/stellar-wallets-kit/modules/wallet-connect';
+EOF
+npx esbuild entry-wc.js --bundle --format=esm --platform=browser --minify \
+  --define:global=globalThis --define:process.env.NODE_ENV='"production"' \
+  --outfile=stellar-wc.bundle.js
+shasum -a 256 stellar-wc.bundle.js   # record in the table above
+```
+
+Note the export subpath is `modules/wallet-connect` (hyphenated). `modules/walletconnect` does not
+exist and fails to resolve.
+
+**Verified via real Chromium (Playwright), not Node** — same policy as the 7-module bundle. Confirmed:
+loads as ESM, exports all three symbols, constructs with `{projectId, metadata, allowedChains}`,
+reports `productName: WalletConnect` / `moduleType: BRIDGE_WALLET`, and exposes the full
+`ModuleInterface`. Zero page errors.
+
+**Wiring:** `connector-stellar.js` imports it lazily inside `_connectWC()` and hands the instance to
+the existing `_connectVia()`, so it flows through the same network-passphrase, address-validation and
+signer-match checks as every other Stellar wallet with no special-casing. `allowedChains` is scoped to
+the selected network only — a pubnet session is never reused to sign on testnet. `disconnect()` drops
+the cached instance so the next connect negotiates a fresh pairing.
+
+**CSP:** already covered by the existing WalletConnect relay entries added for EVM
+(`wss://relay.walletconnect.com`, `verify.walletconnect.org`, etc.). `api.web3modal.org` and
+`rpc.walletconnect.org` were added 2026-09-11 for AppKit's newer Reown endpoints.
+
+**Still open — same gate as the EVM rebuild:** no manual human WalletConnect click-through test yet.
+Headless Chromium cannot drive a real mobile wallet pairing, so the pair-scan-approve-sign round trip
+remains founder-verified only.

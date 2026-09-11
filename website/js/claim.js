@@ -147,12 +147,25 @@ window.SAFU.claim = (() => {
       if (!a.isValidClaimId(claimId) || !a.isValidTxHash(onChainTx)) {
         throw new Error('Claim activated, but the response was malformed — check your dashboard or contact support.');
       }
+
+      // Persist so the claim ID survives a closed tab / cleared session — same
+      // shape as beneficiary storage. Without this, a user who navigates away
+      // before the 7-day cooldown clears has no way to recover it.
+      window.SAFU.ui.setClaimId(S.walletAddress, a.id, claimId);
+
       statusEl.innerHTML =
         `> claim activated on-chain<br>` +
         `> score: ${score}/100<br>` +
         `> claim id: ${claimId}<br>` +
         `> tx: <a href="${a.explorerTxUrl(onChainTx)}" target="_blank" rel="noopener noreferrer">${onChainTx.slice(0,20)}…</a><br>` +
         `> payout streaming to your beneficiary`;
+
+      // The stake-status badge (init.js) was last written before this claim
+      // existed and silently stays "claim active: no" until a manual reload
+      // without this — same refresh call stake.js already makes on success.
+      if (window.SAFU.init && window.SAFU.init.loadStakeStatus) {
+        window.SAFU.init.loadStakeStatus();
+      }
     } catch (e) {
       hide('auto-claim-section');
       // e.message can be the claim POST's data.detail verbatim — backend

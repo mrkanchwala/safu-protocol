@@ -136,6 +136,17 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
   font-size: 0.62rem; border: 1px solid currentColor; padding: 0.05rem 0.35rem;
   opacity: 0.75; text-transform: uppercase;
 }
+/* Audit-pending qualifier. Must NOT inherit currentColor like .cbtag above —
+   on the active button that renders it in the same white as the neutral
+   network tag beside it, so a warning reads as just another label. Reuses the
+   amber the disclosure band already owns (#ffcc00) so both carry one
+   consistent "read this before you stake" signal, and drops the 0.75 opacity
+   that deliberately quiets the neutral tag. */
+.chain-btn .cbtag-caution {
+  color: #ffcc00; border-color: #ffcc00;
+  background: rgba(255, 204, 0, 0.08);
+  opacity: 1;
+}
 
 /* Persistent testnet reminder — closes content/marketing/design findings H5,
    M2, M2 together (2026-08-19). NOT the small `sec-chain-tag` qualifier in
@@ -145,7 +156,17 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .testnet-band {
   font-size: 0.72rem; letter-spacing: 0.03em; color: #ffcc00;
   border: 1px solid #ffcc00; background: rgba(255,204,0,0.06);
-  padding: 0.5rem 0.85rem; margin-bottom: 1.5rem; max-width: fit-content;
+  padding: 0.5rem 0.85rem; margin-bottom: 1.5rem;
+  /* `fit-content` alone was fine for the old one-line testnet warning, but the
+     mainnet/audit disclosure is ~230 chars and stretched to a ~125-character
+     measure on a wide viewport — roughly 1.5x the readable limit, on the one
+     line most worth actually reading.
+     Two properties, not `max-width: min(fit-content, 72ch)`: `fit-content` is a
+     keyword, not a length, so it is invalid inside min() and the browser drops
+     the whole declaration silently. `width` keeps the box tight to short copy
+     on other chains; `max-width` holds the measure when the copy is long. */
+  width: fit-content;
+  max-width: 72ch;
 }
 
 /* ── STATS BAR ──────────────────────────────────────────────── */

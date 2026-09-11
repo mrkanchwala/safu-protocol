@@ -175,20 +175,26 @@ window.CONFIG = {
       label:        'Stellar',
       assetSymbol:  'XLM',
       tag:          'XLM',
-      // Never null on this chain. A testnet pool must never render at visual
-      // parity with a live mainnet one.
-      networkLabel: 'testnet',
+      // Never null on this chain. Mainnet-but-under-audit must never render
+      // at visual parity with a fully cleared pool — see auditPending below.
+      networkLabel: 'mainnet',
       family:       'stellar',
-      status:       'testnet',
-      osLabel:      'Stellar Testnet',
+      status:       'mainnet',
+      osLabel:      'Stellar Mainnet',
+
+      // T3 mainnet pool is live and unaudited-in-progress. Do not remove
+      // until the third-party audit (applied for after Tranche 2) completes
+      // and remediation lands — this drives the caution icon on the
+      // chain-picker button and the disclosure band, both in wallet.js.
+      auditPending: true,
 
       // 7, not 18. XLM's base unit is the stroop (1 XLM = 10^7 stroops).
       // Formatting a stroop amount with 18 understates it by 10^11.
       decimals:     7,
 
       // chain plumbing
-      networkPassphrase: 'Test SDF Network ; September 2015',
-      rpcUrl:       'https://soroban-testnet.stellar.org',
+      networkPassphrase: 'Public Global Stellar Network ; September 2015',
+      rpcUrl:       'https://mainnet.sorobanrpc.com',
 
       // Inclusion fee in stroops. prepareTransaction() adds the Soroban
       // resource fee on top; this is only the inclusion bid.
@@ -201,23 +207,23 @@ window.CONFIG = {
       // account (G…): a contract address is not a valid transaction source.
       simulationSource: 'GCZOUSNCY4TRCPQHP4IN2JEF4TVUMKGAZ6HNUXKIUWPMZJHJ7RA7A2UD',
 
-      // TRANCHE 2 CONTRACT — deployed 2026-08-20 (D4 Step 6), replacing the T1
-      // placeholder used to unblock D3. Constructed via `/ship` with the
-      // locked config: real AWS KMS oracle, treasury set at Step 7. No vault
-      // yet — that lands at Step 13, which is why `disclosures` below stays
-      // empty until then.
-      contract:     'CDTXVIA4TSQ6PY76VFD4BBW4R4UMGSE5HTBNAMASAPRYRNV37DBDJJBB',
+      // TRANCHE 3 MAINNET CONTRACT — deployed 2026-09-10 (D1), replacing the
+      // T2 testnet contract this field pointed at through the whole T2
+      // review cycle. Vault wired same day (D1 sub-sequence): DeFindex vault
+      // CA2LV3YOQ5WTQJKWIK6BFWXPNMSPHRG7763T5B4JLMEJLTVNNIK6S5AP, deploy_bps
+      // 500 (5%), vault_fee=0 (verified on-chain, STRIDE Elevation.3 met).
+      contract:     'CB3LZVWKGGWSYHHIE7ILK5CJH2MLUB6SWAU7UK6PMQEP3AESD3DAUBRC',
 
-      // Native XLM SAC, read from the deployed contract's instance storage
-      // (DataKey::XlmToken) rather than assumed from a docs table.
-      assetContract: 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC',
+      // Native XLM SAC on mainnet, verified live (name="native", full SEP-41
+      // surface) — not assumed to match the testnet address pattern.
+      assetContract: 'CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA',
 
       // links — stellar.expert routes accounts and contracts to DIFFERENT
       // paths, unlike Etherscan's single /address/, so this is two fields.
       explorerName:         'stellar.expert',
-      explorerTxBase:       'https://stellar.expert/explorer/testnet/tx/',
-      explorerAccountBase:  'https://stellar.expert/explorer/testnet/account/',
-      explorerContractBase: 'https://stellar.expert/explorer/testnet/contract/',
+      explorerTxBase:       'https://stellar.expert/explorer/public/tx/',
+      explorerAccountBase:  'https://stellar.expert/explorer/public/account/',
+      explorerContractBase: 'https://stellar.expert/explorer/public/contract/',
       repoName:             'safu-soroban',
       repoUrl:              'https://github.com/mrkanchwala/safu-soroban',
 
@@ -233,8 +239,9 @@ window.CONFIG = {
       // there is no STAKE_MIN()/STAKE_MAX() getter to call. The cap itself is
       // readable: it lives in the contract's INSTANCE storage under
       // DataKey::PoolCap, which RPC exposes with no getter and no contract
-      // change. Read live 2026-08-19: pool_cap = 600,000 XLM, giving
-      // min 120 XLM / max 7,500 XLM — matching the documented T1 deploy value.
+      // change. Read live 2026-09-10 (T3 mainnet deploy): pool_cap = 40,000
+      // XLM, giving min 8 XLM / max 500 XLM — F19's structural bound on how
+      // much the exposed admin/co-signer keys can ever control.
       //
       // The bps constants are compile-time Rust consts, unreadable at runtime,
       // so they live here and MUST be re-verified against types.rs if the
@@ -242,8 +249,8 @@ window.CONFIG = {
       stakeMinBps:         2,
       stakeMaxBps:         125,
       stakeBpsDenominator: 10000,
-      stakeMinFallback:    '120',
-      stakeMaxFallback:    '7500',
+      stakeMinFallback:    '8',
+      stakeMaxFallback:    '500',
 
       // VERIFIED against types.rs, not assumed to match V8 by coincidence:
       // COOLDOWN_LEDGERS = 7 * LEDGERS_PER_DAY, VESTING_LEDGERS = 45 * .
@@ -266,16 +273,20 @@ window.CONFIG = {
       },
 
       evidence: {
+        // T2's audit-chain+CSO PASS (2026-08-17, 10 findings, all remediated)
+        // described the T2 contract tree. T3 changed the tree (5 new flags,
+        // merged 2026-09-01) and applied to SCF's Audit Bank for a NEW
+        // third-party review after Tranche 2 was approved — that review is
+        // in progress now, not complete. Showing T2's old PASS here would
+        // misrepresent an in-progress audit as a cleared one. SDF-cleared
+        // disclosure wording (Emir, 2026-09-09): applied after Tranche 2,
+        // awaiting approval.
         audit: {
-          toolLabel: 'audit-chain + CSO',
-          date:      '2026-08-17',
-          verdict:   'PASS',
-          // NULL, deliberately — not a zeros table. The 7a combined audit
-          // recorded the static analyser's 0/0/0 as VACUOUS because its build
-          // failed, i.e. no detector ran. Presenting zeros here would be the
-          // same false-clean claim that audit existed to catch.
+          toolLabel: 'third-party audit (Audit Bank)',
+          date:      null,
+          verdict:   'IN PROGRESS',
           severities: null,
-          findingsSummary: '10 findings across contract, API and scanner — all remediated and verified',
+          findingsSummary: 'Applied for third-party audit after Tranche 2 was approved and paid — review in progress, results not yet available.',
         },
 
         // NO `symbolic` key. Halmos does not run against Soroban, and no
@@ -283,8 +294,8 @@ window.CONFIG = {
         // panel is hidden rather than relabelled into a generic "audit
         // coverage" box that would imply a check nobody performed.
 
-        review: { label: 'combined audit — contract, api, scanner', date: '2026-08-17', verdict: 'PASS' },
-        tests:  { label: 'rust test suite', value: '238 / 238', sub: 'unit tests pass' },
+        review: { label: 'internal audit-chain + CSO (T2 baseline)', date: '2026-08-17', verdict: 'PASS — pre-dates T3 changes, see audit above' },
+        tests:  { label: 'rust test suite', value: '278 / 278', sub: 'unit tests pass' },
 
         // NO `invariant` key. The Soroban contract's solvency/cap checks read
         // `total_staked` accounting, never a real token.balance() call — the
@@ -302,15 +313,20 @@ window.CONFIG = {
       // inherited from Ethereum — the EVM contracts are BUSL-1.1 and are NOT
       // SCF-funded, so the two chains legitimately differ here.
       contractMeta: {
-        langLine: 'Rust 2021 · soroban-sdk 27.0.0 · Apache-2.0',
+        langLine: 'Rust 2021 · soroban-sdk 27.0.6 · Apache-2.0',
       },
 
-      // EMPTY until D4 Step 13 deploys SAFU's own DeFindex vault and calls
-      // set_vault. Live-confirmed 2026-08-20 (Step 7): get_vault() on the
-      // T2 contract already returns null — the contract itself has no yield
-      // integration wired yet, so rendering "your XLM goes into a DeFindex
-      // vault" here would still be an inaccurate disclosure — worse than none.
-      disclosures: [],
+      // T3 D1 wired the vault same day as deploy (2026-09-10): DeFindex vault
+      // CA2LV3YOQ5WTQJKWIK6BFWXPNMSPHRG7763T5B4JLMEJLTVNNIK6S5AP, vault_fee=0
+      // verified on-chain (get_fees()==[0,5000], DeFindex earns nothing from
+      // this pool), deploy_bps=500 (5% cap), upgradable=false. get_vault() no
+      // longer returns null — confirm live before removing this disclosure.
+      disclosures: [
+        'A capped share of staked XLM (5%) is deployed into a DeFindex vault ' +
+        'routing to Blend for yield. Vault fee is 0% — DeFindex earns nothing ' +
+        'from this pool. XLM lending yield is small (well under 1% APY); this ' +
+        'is not presented as staker income.',
+      ],
 
       // See the matching Ethereum comment for why these exist. Updated
       // 2026-08-19 alongside the connector-stellar.js rewrite — Freighter was

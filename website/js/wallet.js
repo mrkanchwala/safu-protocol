@@ -77,6 +77,17 @@ window.SAFU.wallet = (() => {
       tagEl.textContent = cfg.networkLabel ? cfg.networkLabel : 'live';
       btn.appendChild(tagEl);
 
+      // Caution icon for a mainnet pool still under third-party audit — a
+      // separate signal from networkLabel (testnet vs mainnet), never
+      // conflated with it. A pool can be real mainnet AND still carry this.
+      if (cfg.auditPending) {
+        const cautionEl = document.createElement('span');
+        cautionEl.className = 'cbtag cbtag-caution';
+        cautionEl.textContent = '⚠ audit pending';
+        cautionEl.title = 'Third-party audit applied for after Tranche 2, review in progress.';
+        btn.appendChild(cautionEl);
+      }
+
       if (!isActive) btn.addEventListener('click', () => _switchChain(id));
       host.appendChild(btn);
     });
@@ -86,7 +97,16 @@ window.SAFU.wallet = (() => {
     const band = document.getElementById('testnet-band');
     if (!band) return;
     const cfg = window.SAFU.chain();
-    if (cfg.networkLabel) {
+    if (cfg.auditPending) {
+      // Mainnet, real funds, real payouts — the opposite factual claim from
+      // the testnet band below. Never reuse that wording once real money is
+      // moving; the SDF-cleared disclosure line is the one to say instead.
+      band.textContent =
+        `⚠ ${cfg.label} mainnet — live pool, real funds, real payouts. ` +
+        `This pool applied for a third-party audit after Tranche 2 was ` +
+        `approved; that review is in progress and not yet complete.`;
+      band.classList.remove('d-none');
+    } else if (cfg.networkLabel) {
       band.textContent =
         `⚠ ${cfg.label} ${cfg.networkLabel} — no real funds, no real payouts. ` +
         `This demonstrates the live mechanism, not the production pool.`;
@@ -278,7 +298,10 @@ window.SAFU.wallet = (() => {
     const navBtn = document.getElementById('btn-connect');
     if (navBtn) { navBtn.textContent = '[ connect wallet ]'; navBtn.classList.remove('connected'); }
     const discBtn = document.getElementById('btn-disconnect');
-    if (discBtn) discBtn.style.display = 'none';
+    // Symmetric with _onConnected: own the class, not the inline style, so the
+    // two never fight. Inline `display:none` alone would "work" here only by
+    // coincidence — the class is what actually governs this element.
+    if (discBtn) { discBtn.classList.add('d-none'); discBtn.style.removeProperty('display'); }
     const stakeBtn = document.getElementById('btn-stake-connect');
     if (stakeBtn) { stakeBtn.textContent = '[ connect wallet ]'; stakeBtn.disabled = false; }
     const enrollBtn = document.getElementById('btn-enroll');
@@ -297,7 +320,12 @@ window.SAFU.wallet = (() => {
     const navBtn = document.getElementById('btn-connect');
     if (navBtn) { navBtn.textContent = `[ ${short} ]`; navBtn.classList.add('connected'); }
     const discBtn = document.getElementById('btn-disconnect');
-    if (discBtn) discBtn.style.display = 'inline-block';
+    // MUST toggle the class, not the inline style. `.d-none` is
+    // `display:none !important` (styles.css:242) and an inline style cannot
+    // override an !important stylesheet rule — so the pre-2026-09-11 version
+    // of this line (`discBtn.style.display = 'inline-block'`) left the button
+    // permanently invisible and the user with no way to disconnect at all.
+    if (discBtn) { discBtn.classList.remove('d-none'); discBtn.style.removeProperty('display'); }
 
     const stakeBtn = document.getElementById('btn-stake-connect');
     if (stakeBtn) { stakeBtn.textContent = '✓ connected'; stakeBtn.disabled = true; }
