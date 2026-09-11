@@ -202,6 +202,10 @@ window.SAFU.connectors.stellar = (() => {
   // _connectVia() and signTransaction() with no special-casing.
   let _wcModule = null;
 
+  // Long enough for a real scan-and-approve on a phone, short enough
+  // that a dead pairing does not strand the UI.
+  const WC_CONNECT_TIMEOUT_MS = 120000;
+
   async function _connectWC() {
     const cfg = chainCfg();
     if (!_wcModule) {
@@ -224,7 +228,32 @@ window.SAFU.connectors.stellar = (() => {
         ],
       });
     }
-    return _connectVia(_wcModule, 'WalletConnect');
+    // WalletConnect is the only option here that can hang with no error to
+    // show for it. The kit settles its promise on pairing, so a user who
+    // never scans, or dismisses the prompt on their phone, leaves it pending
+    // forever and the caller's "Connecting" spinner spins until a reload.
+    // Bound it, and tear the module down on the way out so a retry pairs
+    // fresh rather than reusing a session that was never established.
+    let timer;
+    try {
+      return await Promise.race([
+        _connectVia(_wcModule, 'WalletConnect'),
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error(
+              'WalletConnect timed out. No wallet approved the pairing \u2014 try again.'
+            )),
+            WC_CONNECT_TIMEOUT_MS
+          );
+        }),
+      ]);
+    } catch (err) {
+      try { if (_wcModule && _wcModule.disconnect) _wcModule.disconnect(); } catch (_) {}
+      _wcModule = null;
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   return {
