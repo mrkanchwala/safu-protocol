@@ -311,6 +311,14 @@ window.SAFU.connectors.stellar = (() => {
           url:         'https://safustaking.com',
           icons:       ['https://safustaking.com/favicon.svg'],
         },
+        // Own Core, own storage. The EVM WalletConnect bundle (2.19.2) and
+        // this one (2.23.x) both park their Core on the SAME global,
+        // `_walletConnectCore_<customStoragePrefix>`, and reuse whatever is
+        // already there. EVM-first left this client on 2.19.2's Core, which
+        // has no relayer.publishCustom → "publishCustom is not a function"
+        // (founder report, 2026-09-11). A distinct prefix gives each chain
+        // its own Core and its own session storage.
+        signClientOptions: { customStoragePrefix: 'safu-stellar' },
         // Scoped to the chain actually selected — never both. A session
         // negotiated for pubnet must not be reused to sign on testnet.
         allowedChains: [
