@@ -146,12 +146,18 @@ window.SAFU.connectors.stellar = (() => {
       throw err;
     }
 
-    // Remembered so signTransaction() below knows which module to call —
-    // wallet.js only ever holds one active connection at a time, same as the
-    // EVM side.
+    return { address };
+  }
+
+  // Remembered so signTransaction() below knows which module to call —
+  // wallet.js only ever holds one active connection at a time, same as the
+  // EVM side. Called only AFTER the connect-timeout race resolves, never from
+  // inside _connectVia(): a wallet that approves after its attempt already
+  // timed out must not silently become the signing module for whatever the
+  // user connected next (/cso 2026-09-11).
+  function _select(mod, label) {
     window.SAFU.state._stellarModule = mod;
     window.SAFU.state._stellarWalletLabel = label;
-    return { address };
   }
 
   // The authoritative signing check, run for EVERY wallet. The returned
@@ -365,7 +371,8 @@ window.SAFU.connectors.stellar = (() => {
           // _connectVia() is CALLED synchronously inside the click, so a wallet
           // that opens a popup (xBull, Albedo) still does it within the user
           // gesture and is not popup-blocked. Only the wait is bounded.
-          connect: () => _withTimeout(_connectVia(mod, mod.productName), mod.productName),
+          connect: () => _withTimeout(_connectVia(mod, mod.productName), mod.productName)
+            .then(r => { _select(mod, mod.productName); return r; }),
         }));
 
       // Always offered — unlike the extension modules there is nothing to
@@ -374,7 +381,8 @@ window.SAFU.connectors.stellar = (() => {
       out.push({
         name:    'WalletConnect',
         tag:     'LOBSTR · HOT · mobile',
-        connect: () => _withTimeout(_connectWC(), 'WalletConnect', _wcCloseModal),
+        connect: () => _withTimeout(_connectWC(), 'WalletConnect', _wcCloseModal)
+          .then(r => { _select(_wcModule, 'WalletConnect'); return r; }),
         // No reopenOnError flag: wallet.js now puts the picker back, with the
         // reason shown in it, after ANY failed connect.
       });
