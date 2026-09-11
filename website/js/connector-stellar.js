@@ -29,6 +29,16 @@
 // that needs no extension at all — that is real availability, not a bug.
 // `_isAvailable()` below wraps every check in a 1200ms race so a slow module
 // cannot stall the whole wallet list.
+//
+// ⚠ getNetwork() AND signerAddress ARE OPTIONAL IN THE KIT — fixed 2026-09-11.
+// Read from the kit 2.5.0 source, not assumed: xBull, Albedo, Hana, LOBSTR,
+// Rabet and WalletConnect all reject getNetwork() with code -3 ("does not
+// support"), and LOBSTR, Rabet and WalletConnect return no signerAddress from
+// signTransaction(). This file used to REQUIRE both — Freighter's shape
+// applied to every module — so from 2026-08-19 until this fix only Freighter
+// could ever connect. Both guarantees still hold, enforced where they
+// actually bind: _verifySignature() checks the returned signature itself
+// against the connected account AND this chain's passphrase, for every wallet.
 window.SAFU = window.SAFU || {};
 window.SAFU.connectors = window.SAFU.connectors || {};
 
@@ -60,7 +70,9 @@ window.SAFU.connectors.stellar = (() => {
   // "Stellar SDK not loaded" deep inside signing instead of here.
   function ensureDeps() {
     return Promise.all([
-      window.SAFU.loadScript('js/stellar-wallets-kit.bundle.js', 'SAFUStellarWalletModules'),
+      // ?v= because the bundle was rebuilt 2026-09-11 (Buffer polyfill for HOT
+      // Wallet) and this path is fetched by loadScript, not an index.html tag.
+      window.SAFU.loadScript('js/stellar-wallets-kit.bundle.js?v=40', 'SAFUStellarWalletModules'),
       window.SAFU.adapter().ensureSdk(),
     ]);
   }
@@ -98,15 +110,25 @@ window.SAFU.connectors.stellar = (() => {
     // The name ("TESTNET") is a label; the passphrase is what every signature is
     // domain-separated by, so a mismatch here means a signature that is invalid
     // on the network the contract actually lives on.
-    let net;
+    //
+    // getNetwork() is optional (see header): code -3 means "this wallet has no
+    // such function", not "wrong network". For those wallets the network is
+    // enforced at signing by _verifySignature(). Any OTHER failure — a locked
+    // wallet, an extension fault — is still a refusal.
+    let net = null;
+    let networkUnsupported = false;
     try {
       net = await mod.getNetwork();
     } catch (e) {
-      const err = new Error(`${label} network: ${e.message}`);
-      err.userMessage = `Could not read ${label}'s network. Try again.`;
-      throw err;
+      if (e && e.code === -3) {
+        networkUnsupported = true;
+      } else {
+        const err = new Error(`${label} network: ${e && e.message}`);
+        err.userMessage = `Could not read ${label}'s network. Try again.`;
+        throw err;
+      }
     }
-    if (!net || net.networkPassphrase !== cfg.networkPassphrase) {
+    if (!networkUnsupported && (!net || net.networkPassphrase !== cfg.networkPassphrase)) {
       const want = cfg.networkLabel || cfg.label;
       const err = new Error(`${label} is on ${(net && net.network) || 'an unknown network'}`);
       err.userMessage =
@@ -132,6 +154,38 @@ window.SAFU.connectors.stellar = (() => {
     return { address };
   }
 
+  // The authoritative signing check, run for EVERY wallet. The returned
+  // envelope must carry a valid ed25519 signature from the connected account
+  // over this transaction's hash — and that hash is domain-separated by this
+  // chain's network passphrase. So one check proves both WHO signed and FOR
+  // WHICH NETWORK, from the signature bytes rather than from what a wallet
+  // reports about itself. It is what lets wallets without getNetwork() or
+  // signerAddress connect without relaxing either guarantee.
+  function _verifySignature(signedXdr, cfg, address, label) {
+    const Sdk = window.StellarSdk;
+    const want = cfg.networkLabel || `${cfg.label} mainnet`;
+    let tx;
+    try {
+      tx = Sdk.TransactionBuilder.fromXDR(signedXdr, cfg.networkPassphrase);
+    } catch (e) {
+      const err = new Error(`${label} returned an unreadable transaction: ${e.message}`);
+      err.userMessage = `${label} returned a transaction SAFU could not read.`;
+      throw err;
+    }
+    const kp = Sdk.Keypair.fromPublicKey(address);
+    const hash = tx.hash();
+    const valid = (tx.signatures || []).some(sig => {
+      try { return kp.verify(hash, sig.signature()); } catch { return false; }
+    });
+    if (!valid) {
+      const err = new Error(`${label} signature does not verify for ${address} on ${cfg.networkPassphrase}`);
+      err.userMessage =
+        `${label}'s signature is not from ${address.slice(0, 6)}… on ${want}. ` +
+        `Check the wallet is on ${want} and on the connected account, then retry.`;
+      throw err;
+    }
+  }
+
   // Used by the Stellar adapter's write path. Kept here rather than in the
   // adapter because signing is a WALLET capability, not a chain one — a
   // different Stellar wallet module swaps this out and leaves the adapter
@@ -143,6 +197,9 @@ window.SAFU.connectors.stellar = (() => {
     const label = S._stellarWalletLabel || 'Stellar wallet';
     if (!mod) {
       throw new Error('SAFU: no Stellar wallet module selected — connect first');
+    }
+    if (!S.walletAddress) {
+      throw new Error('SAFU: no connected Stellar account to sign for — connect first');
     }
 
     let res;
@@ -166,22 +223,19 @@ window.SAFU.connectors.stellar = (() => {
     // signature from a different account fails on-chain after the user has
     // already paid attention to a prompt.
     //
-    // signerAddress is REQUIRED, not optionally checked — checking it only
-    // when present fails OPEN: an absent signerAddress would silently skip
-    // the account-match check entirely rather than being treated as "cannot
-    // verify who signed."
-    if (!res.signerAddress) {
-      const err = new Error(`${label} did not report which account signed`);
-      err.userMessage = 'Could not verify which account signed. Reconnect and try again.';
-      throw err;
-    }
-    if (S.walletAddress && res.signerAddress !== S.walletAddress) {
+    // A reported signerAddress gets the fast, clearly-worded check below. It is
+    // NOT the guarantee any more: the pre-2026-09-11 version required one and
+    // so refused LOBSTR, Rabet and WalletConnect outright — they never report
+    // it. The guarantee is _verifySignature(), which does not fail open when
+    // signerAddress is absent: it proves the signer from the signature bytes.
+    if (res.signerAddress && res.signerAddress !== S.walletAddress) {
       const err = new Error(`${label} signed with a different account`);
       err.userMessage =
         `${label} signed with ${res.signerAddress.slice(0, 6)}…, not the connected account. ` +
         `Switch back and retry.`;
       throw err;
     }
+    _verifySignature(res.signedTxXdr, cfg, S.walletAddress, label);
     return res.signedTxXdr;
   }
 
@@ -200,14 +254,46 @@ window.SAFU.connectors.stellar = (() => {
   // / `stellar_signMessage` / `stellar_signAuthEntry`, and the same
   // ModuleInterface every other module here implements — so it flows through
   // _connectVia() and signTransaction() with no special-casing.
+  //
+  // ONE instance per page, never rebuilt. The kit's constructor fires
+  // SignClient.init() without awaiting it, and a second construction re-runs
+  // it ("WalletConnect Core is already initialized ... Init() was called 2
+  // times" — observed live 2026-09-11, because the pre-fix failure path
+  // dropped and rebuilt the instance on every retry).
   let _wcModule = null;
+  let _wcPassphrase = null;
+  const WC_READY_TIMEOUT_MS = 20000;
 
-  // Long enough for a real scan-and-approve on a phone, short enough
-  // that a dead pairing does not strand the UI.
-  const WC_CONNECT_TIMEOUT_MS = 120000;
+  // The module is usable only once its async SignClient.init() resolves —
+  // until then isAvailable() is false and getAddress() throws "WalletConnect
+  // modules has not been started yet." The pre-fix code called getAddress()
+  // straight after construction, so EVERY first click failed that check.
+  // Wait on the kit's own readiness signal instead of guessing a delay.
+  async function _wcWhenReady() {
+    const deadline = Date.now() + WC_READY_TIMEOUT_MS;
+    while (!(await _wcModule.isAvailable())) {
+      if (Date.now() > deadline) {
+        const err = new Error('WalletConnect SignClient never initialised');
+        err.userMessage = 'WalletConnect could not start. Check your connection and try again.';
+        throw err;
+      }
+      await new Promise(r => setTimeout(r, 150));
+    }
+  }
+
+  function _wcCloseModal() {
+    try { if (_wcModule && _wcModule.modal) _wcModule.modal.close(); } catch (_) {}
+  }
 
   async function _connectWC() {
     const cfg = chainCfg();
+    if (_wcModule && _wcPassphrase !== cfg.networkPassphrase) {
+      // allowedChains is fixed at construction and the instance cannot be
+      // rebuilt (see above) — refuse rather than pair on the wrong network.
+      const err = new Error('WalletConnect instance is scoped to a different Stellar network');
+      err.userMessage = 'Reload the page to use WalletConnect on this network.';
+      throw err;
+    }
     if (!_wcModule) {
       const { WalletConnectModule, WalletConnectTargetChain } =
         await import('/js/stellar-wc.bundle.js');
@@ -227,33 +313,38 @@ window.SAFU.connectors.stellar = (() => {
             : WalletConnectTargetChain.TESTNET,
         ],
       });
+      _wcPassphrase = cfg.networkPassphrase;
     }
-    // WalletConnect is the only option here that can hang with no error to
-    // show for it. The kit settles its promise on pairing, so a user who
-    // never scans, or dismisses the prompt on their phone, leaves it pending
-    // forever and the caller's "Connecting" spinner spins until a reload.
-    // Bound it, and tear the module down on the way out so a retry pairs
-    // fresh rather than reusing a session that was never established.
-    let timer;
+    await _wcWhenReady();
     try {
-      return await Promise.race([
-        _connectVia(_wcModule, 'WalletConnect'),
-        new Promise((_, reject) => {
-          timer = setTimeout(
-            () => reject(new Error(
-              'WalletConnect timed out. No wallet approved the pairing \u2014 try again.'
-            )),
-            WC_CONNECT_TIMEOUT_MS
-          );
-        }),
-      ]);
+      return await _connectVia(_wcModule, 'WalletConnect');
     } catch (err) {
-      try { if (_wcModule && _wcModule.disconnect) _wcModule.disconnect(); } catch (_) {}
-      _wcModule = null;
+      // Never leave the QR modal stranded over the page after a failure. The
+      // instance is kept (see _wcModule); the next attempt pairs fresh anyway.
+      _wcCloseModal();
       throw err;
-    } finally {
-      clearTimeout(timer);
     }
+  }
+
+  // One bound on EVERY connect, not only WalletConnect. HOT Wallet's relay
+  // poll (@hot-wallet/sdk hot.js) retries every 3 s with no limit at all, a
+  // WalletConnect pairing nobody scans never settles, and a web-wallet popup
+  // the user closes may never settle either \u2014 each used to leave "Connecting"
+  // spinning until a reload. Long enough for a real scan-and-approve on a
+  // phone, short enough that a dead attempt does not strand the UI.
+  const CONNECT_TIMEOUT_MS = 120000;
+
+  function _withTimeout(promise, label, onTimeout) {
+    let timer;
+    const limit = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        if (onTimeout) onTimeout();
+        const err = new Error(`${label} connect timed out`);
+        err.userMessage = `${label} did not finish connecting within 2 minutes. Try again.`;
+        reject(err);
+      }, CONNECT_TIMEOUT_MS);
+    });
+    return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
   }
 
   return {
@@ -271,7 +362,10 @@ window.SAFU.connectors.stellar = (() => {
         .map(({ mod }) => ({
           name:    mod.productName,
           tag:     'extension',
-          connect: () => _connectVia(mod, mod.productName),
+          // _connectVia() is CALLED synchronously inside the click, so a wallet
+          // that opens a popup (xBull, Albedo) still does it within the user
+          // gesture and is not popup-blocked. Only the wait is bounded.
+          connect: () => _withTimeout(_connectVia(mod, mod.productName), mod.productName),
         }));
 
       // Always offered — unlike the extension modules there is nothing to
@@ -280,11 +374,9 @@ window.SAFU.connectors.stellar = (() => {
       out.push({
         name:    'WalletConnect',
         tag:     'LOBSTR · HOT · mobile',
-        connect: _connectWC,
-        // The user is mid-flow in WalletConnect's own overlay when this runs,
-        // so a failure should put the picker back rather than leave them on a
-        // bare page — same reasoning as connector-evm.js's WC entry.
-        reopenOnError: true,
+        connect: () => _withTimeout(_connectWC(), 'WalletConnect', _wcCloseModal),
+        // No reopenOnError flag: wallet.js now puts the picker back, with the
+        // reason shown in it, after ANY failed connect.
       });
 
       return out;
@@ -302,11 +394,9 @@ window.SAFU.connectors.stellar = (() => {
         Promise.resolve(mod.disconnect()).catch(() => {});
       }
       // WalletConnect is the one module here with a REAL session to end, and
-      // the cached instance holds it. Dropping the reference forces a fresh
-      // pairing next time instead of silently reusing a session the user just
-      // asked to end — the bundle itself stays cached by the browser, so this
-      // costs a re-init, not a re-download.
-      _wcModule = null;
+      // mod.disconnect() above ends it. The instance itself is KEPT: rebuilding
+      // it re-runs SignClient.init() (see _wcModule), and the next connect
+      // negotiates a fresh pairing through signClient.connect() regardless.
       window.SAFU.state._stellarModule = null;
       window.SAFU.state._stellarWalletLabel = null;
     },

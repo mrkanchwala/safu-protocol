@@ -9,7 +9,7 @@
 | `stellar-sdk.min.js` | `@stellar/stellar-sdk` | 16.2.0 | `StellarSdk` | 472 KB | Apache-2.0 | `c872bee0e34302f812bcb404580f288cf3d434efeee3d40755d4024d74982fd0` |
 | `freighter-api.min.js` | `@stellar/freighter-api` | 6.0.1 | `freighterApi` | 10 KB | Apache-2.0 | `d797429cf97f9a67f1999910830a89dc01d565aedebafb651a11b1ed003a7e9d` |
 | `wc-provider.bundle.js` | `@walletconnect/ethereum-provider` | 2.19.2 | ES module export (`EthereumProvider`) | 599 KB (613,619 bytes) | Apache-2.0 | `b7b4aa997065450f33c2b647339c4b0a81921346e4db3655d7c39def362027d6` |
-| `stellar-wallets-kit.bundle.js` | `@creit.tech/stellar-wallets-kit` | 2.5.0 (7 modules only) | `SAFUStellarWalletModules` (IIFE) | 440 KB (450,677 bytes) | MIT | `ae49d0df2f393beec1e10e809b8599721b9e0577e6686fbb86bc4eddb95a2f06` |
+| `stellar-wallets-kit.bundle.js` | `@creit.tech/stellar-wallets-kit` | 2.5.0 (7 modules only) + `buffer` polyfill injected (rebuilt 2026-09-11) | `SAFUStellarWalletModules` (IIFE) | 441 KB (451,782 bytes) | MIT | `335664afe8017d2d4b15daeb11e5413098fad05c2974c7aa19b4895a4c23f75b` |
 | `stellar-wc.bundle.js` | `@creit.tech/stellar-wallets-kit` | 2.5.0 (WalletConnect module only) | ES module exports (`WalletConnectModule`, `WalletConnectTargetChain`, `WalletConnectAllowedMethods`) | 2.1 MB (2,151,584 bytes) | MIT | `98971e1b07f87b14b3291926fd3628c790250031a2d098cbde23c374a8cd08a8` |
 
 `stellar-sdk.min.js` and `freighter-api.min.js` are published by the Stellar Development Foundation (`github.com/stellar/js-stellar-sdk`, `github.com/stellar/freighter`) and **already ship prebuilt UMD browser bundles**, so no bundler is involved for either.
@@ -86,7 +86,12 @@ Verify functionally before shipping — `node -e "import('./wc-provider.bundle.j
 **Build command:**
 ```bash
 mkdir /tmp/swk-build && cd /tmp/swk-build
-npm init -y && npm install @creit.tech/stellar-wallets-kit@2.5.0 --no-save
+npm init -y && npm install @creit.tech/stellar-wallets-kit@2.5.0 buffer esbuild --no-save --ignore-scripts
+cat > buffer-shim.js <<'EOF'
+import { Buffer } from 'buffer';
+if (typeof globalThis.Buffer === 'undefined') globalThis.Buffer = Buffer;
+export { Buffer };
+EOF
 cat > entry.js <<'EOF'
 import { FreighterModule } from '@creit.tech/stellar-wallets-kit/modules/freighter';
 import { xBullModule }     from '@creit.tech/stellar-wallets-kit/modules/xbull';
@@ -102,10 +107,19 @@ export const modules = {
 };
 EOF
 npx esbuild entry.js --bundle --format=iife --global-name=SAFUStellarWalletModules --minify \
-  --platform=browser --define:global=globalThis \
+  --platform=browser --define:global=globalThis --inject:./buffer-shim.js \
   --outfile=stellar-wallets-kit.bundle.js
 shasum -a 256 stellar-wallets-kit.bundle.js   # record in the table above
 ```
+
+**`--inject:./buffer-shim.js` is required (added 2026-09-11).** `HotWalletModule`'s own source says:
+*"This module requires that you have a "global" and a "Buffer" polyfill in your app, if not
+provided then this module will break your app."* The 2026-08-19 build omitted it, so HOT Wallet
+threw `Buffer is not defined` on every click (`@hot-wallet/sdk` `helpers/proxy.js`
+`computeRequestId`). The inject rewrites every free `Buffer` reference in the bundle; verified by
+grep — zero bare `Buffer.from/alloc/isBuffer/concat` references remain — and in Chromium, where
+HOT now renders its `hot-labs.org` widget. HOT also needs CSP `connect-src https://h4n.app`
+(its relay) and `frame-src https://hot-labs.org` (its widget).
 
 `--define:global=globalThis` is required — without it the bundle throws `global is not defined` in a real browser (some of the kit's internal deps assume a Node-style `global`). `window.SAFUStellarWalletModules.modules` is the object each module lives on (esbuild's `--global-name` nests a single named export under that key, it does not flatten it to the top-level global).
 

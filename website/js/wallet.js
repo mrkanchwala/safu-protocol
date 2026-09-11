@@ -19,6 +19,11 @@ window.SAFU.wallet = (() => {
   const { showStatus, loader } = window.SAFU.ui;
   const S = window.SAFU.state;
 
+  // The last connect failure, rendered at the top of the wallet list. Cleared
+  // whenever the modal closes, so it only ever describes the attempt the user
+  // just made.
+  let _connectError = null;
+
   function _connector() {
     return window.SAFU.connectors[window.SAFU.chain().family] || null;
   }
@@ -250,6 +255,10 @@ window.SAFU.wallet = (() => {
     if (gen !== window.SAFU.chainGeneration()) return;  // a newer switch superseded this render
     list.innerHTML = '';
 
+    // Shown where the user is actually looking. _optionBtn sets textContent,
+    // so wallet-originated text cannot inject markup here.
+    if (_connectError) list.appendChild(_optionBtn(`⚠ ${_connectError}`, 'last attempt', null));
+
     if (!options.length) {
       list.appendChild(_optionBtn(conn.emptyHint || 'No wallet found for this chain.', '', null));
       return;
@@ -278,11 +287,16 @@ window.SAFU.wallet = (() => {
       // rendering as a failure.
       // e.userMessage/e.message can originate from the wallet extension or
       // provider — escape before it reaches showStatus's innerHTML.
-      const msg = e.code === 4001
+      const text = e.code === 4001
         ? 'Connection cancelled.'
-        : `Connection failed: ${window.SAFU.ui.esc(e.userMessage || e.message)}`;
-      showStatus('status-wallet', 'err', msg);
-      if (option.reopenOnError) _openModal();
+        : `Connection failed: ${e.userMessage || e.message}`;
+      showStatus('status-wallet', 'err', window.SAFU.ui.esc(text));
+      // Always put the picker back WITH the reason in it. #status-wallet alone
+      // sits far below the fold while this modal is closed, so before
+      // 2026-09-11 a failed connect looked exactly like a click that did
+      // nothing — the founder's report, on every wallet except Freighter.
+      _connectError = text;
+      _openModal();
     }
   }
 
@@ -355,6 +369,7 @@ window.SAFU.wallet = (() => {
   }
 
   function _closeModal() {
+    _connectError = null;
     const modal = document.getElementById('wallet-modal');
     if (modal) modal.classList.remove('open');
   }

@@ -102,17 +102,41 @@ await ta('a failed load is not cached — a retry actually retries', async () =>
 // not relax any of them.
 
 const CONN = window.SAFU.connectors.stellar;
-const ACC  = 'GCZOUSNCY4TRCPQHP4IN2JEF4TVUMKGAZ6HNUXKIUWPMZJHJ7RA7A2UD';
-const ACC2 = 'GCNLC5XTHKJVBUDZFCZDNVPIZFWPEIH7DPQICXUNINUTLIY6TG4JJDXL';
-const PASS = 'Test SDF Network ; September 2015';
+// Real keypairs, not fixed strings: signing is verified cryptographically
+// (_verifySignature, 2026-09-11), so mocks must return genuinely signed
+// envelopes.
+const KP   = StellarSdk.Keypair.random();
+const KP2  = StellarSdk.Keypair.random();
+const ACC  = KP.publicKey();
+const ACC2 = KP2.publicKey();
+// Follow whatever network config.js points Stellar at. These tests hard-coded
+// the testnet passphrase and broke when 37a1d50 moved Stellar to mainnet —
+// 5 of them were failing before the 2026-09-11 connect fix.
+window.SAFU.setChain('stellar');
+const PASS  = window.SAFU.chain().networkPassphrase;
+const OTHER = PASS.startsWith('Public')
+  ? 'Test SDF Network ; September 2015'
+  : 'Public Global Stellar Network ; September 2015';
+
+// A genuinely signed envelope — the shape a real wallet returns.
+function signedBy(kp, passphrase = PASS) {
+  const tx = new StellarSdk.TransactionBuilder(new StellarSdk.Account(kp.publicKey(), '1'), {
+    fee: '100', networkPassphrase: passphrase,
+  })
+    .addOperation(StellarSdk.Operation.bumpSequence({ bumpTo: '2' }))
+    .setTimeout(30)
+    .build();
+  tx.sign(kp);
+  return tx.toXDR();
+}
 
 function mockModule(overrides) {
   const mod = Object.assign({
     productName:  'Freighter',
     isAvailable:  async () => true,
     getAddress:   async () => ({ address: ACC }),
-    getNetwork:   async () => ({ network: 'TESTNET', networkPassphrase: PASS }),
-    signTransaction: async () => ({ signedTxXdr: 'AAA=', signerAddress: ACC }),
+    getNetwork:   async () => ({ network: 'PUBLIC', networkPassphrase: PASS }),
+    signTransaction: async () => ({ signedTxXdr: signedBy(KP), signerAddress: ACC }),
   }, overrides);
   window.SAFUStellarWalletModules = { modules: { freighter: mod } };
   return mod;
@@ -141,10 +165,10 @@ await ta('an empty address with no thrown error still throws', async () => {
 });
 
 await ta('a network-passphrase mismatch is refused, and it checks the PASSPHRASE not the name', async () => {
-  // The label can say TESTNET while the passphrase is mainnet's; the passphrase
-  // is what every signature is domain-separated by.
+  // The label can name the right network while the passphrase is another's;
+  // the passphrase is what every signature is domain-separated by.
   mockModule({
-    getNetwork: async () => ({ network: 'TESTNET', networkPassphrase: 'Public Global Stellar Network ; September 2015' }),
+    getNetwork: async () => ({ network: 'PUBLIC', networkPassphrase: OTHER }),
   });
   const opt = await connectOption();
   await rejects(opt.connect(), 'mismatched passphrase must be refused');
@@ -165,6 +189,17 @@ await ta('a network read that throws is refused, not treated as a pass', async (
   mockModule({ getNetwork: async () => { throw new Error('wallet locked'); } });
   const opt = await connectOption();
   await rejects(opt.connect(), 'a getNetwork() failure must be refused');
+});
+
+await ta('a wallet that reports getNetwork() as UNSUPPORTED (kit code -3) still connects', async () => {
+  // xBull, Albedo, Hana, LOBSTR, Rabet and WalletConnect all do exactly this
+  // (kit 2.5.0 source). Refusing it is the bug that left Freighter as the only
+  // wallet that could ever connect. Their network is enforced at signing.
+  mockModule({
+    getNetwork: async () => { throw { code: -3, message: 'X does not support the "getNetwork" function' }; },
+  });
+  const opt = await connectOption();
+  eq((await opt.connect()).address, ACC);
 });
 
 await ta('an empty address is refused AS an access failure, not as a bad address', async () => {
@@ -189,7 +224,7 @@ await ta('signing refuses a signature from a DIFFERENT account than the connecte
   // Real hazard: the user switches account in the wallet between connect and
   // sign. The contract requires auth from the staker, so this would fail
   // on-chain after the user had already approved a prompt.
-  mockModule({ signTransaction: async () => ({ signedTxXdr: 'AAA=', signerAddress: ACC2 }) });
+  mockModule({ signTransaction: async () => ({ signedTxXdr: signedBy(KP2), signerAddress: ACC2 }) });
   const opt = await connectOption();
   await opt.connect();  // sets state._stellarModule to this mock
   window.SAFU.state.walletAddress = ACC;
@@ -204,6 +239,44 @@ await ta('signing rejects an empty signed XDR', async () => {
   window.SAFU.state.walletAddress = ACC;
   await rejects(CONN.signTransaction('xdr'), 'empty signature must be rejected');
   window.SAFU.state.walletAddress = null;
+});
+
+// Helper for the signature-verification cases below: connect with the default
+// mock, then sign as the connected account.
+async function signWith(signTransaction) {
+  mockModule({ signTransaction });
+  const opt = await connectOption();
+  await opt.connect();
+  window.SAFU.state.walletAddress = ACC;
+  try { return await CONN.signTransaction('xdr'); }
+  finally { window.SAFU.state.walletAddress = null; }
+}
+
+await ta('signing with NO signerAddress succeeds when the signature itself is from the connected account', async () => {
+  // LOBSTR, Rabet and WalletConnect never report a signer. The pre-fix rule
+  // required one, so none of them could ever sign. The signature proves it.
+  const xdr = signedBy(KP);
+  eq(await signWith(async () => ({ signedTxXdr: xdr })), xdr);
+});
+
+await ta('signing with NO signerAddress is still refused when a DIFFERENT key signed', async () => {
+  // The case the old "signerAddress required" rule existed for. With no
+  // reported signer this must still fail closed — now via the signature.
+  await rejects(signWith(async () => ({ signedTxXdr: signedBy(KP2) })),
+    'a signature from another key must be refused');
+});
+
+await ta('a reported signerAddress cannot vouch for a signature that does not verify', async () => {
+  // The wallet names the right account but the bytes are another key's.
+  await rejects(signWith(async () => ({ signedTxXdr: signedBy(KP2), signerAddress: ACC })),
+    'a claimed signer must not override the signature bytes');
+});
+
+await ta('a signature made for a DIFFERENT network is refused', async () => {
+  // This is where the network is enforced for wallets whose getNetwork() is
+  // unsupported: the passphrase is inside the signed hash.
+  await rejects(signWith(async () => ({ signedTxXdr: signedBy(KP, OTHER), signerAddress: ACC })),
+    'a signature for another network must be refused');
 });
 
 await ta('signing with no wallet module selected is refused, not a silent no-op', async () => {
@@ -231,15 +304,16 @@ await ta('options() skips a module whose isAvailable() times out', async () => {
   const fastMod = {
     productName: 'Fast', isAvailable: async () => true,
     getAddress: async () => ({ address: ACC }),
-    getNetwork: async () => ({ network: 'TESTNET', networkPassphrase: PASS }),
-    signTransaction: async () => ({ signedTxXdr: 'AAA=', signerAddress: ACC }),
+    getNetwork: async () => ({ network: 'PUBLIC', networkPassphrase: PASS }),
+    signTransaction: async () => ({ signedTxXdr: signedBy(KP), signerAddress: ACC }),
   };
   window.SAFUStellarWalletModules = {
     modules: { slow: { productName: 'Slow', isAvailable: () => new Promise(() => {}) }, fast: fastMod },
   };
   const opts = await CONN.options();
-  eq(opts.length, 1, 'the hanging module must be excluded, not block the list');
-  eq(opts[0].name, 'Fast');
+  // WalletConnect is always appended — nothing to detect (since 37a1d50).
+  eq(opts.map(o => o.name).join(','), 'Fast,WalletConnect',
+    'the hanging module must be excluded, not block the list');
 });
 
 t('Stellar wallet modules have no programmatic disconnect and do not pretend otherwise', () => {
