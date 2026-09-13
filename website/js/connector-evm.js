@@ -137,7 +137,14 @@ window.SAFU.connectors.evm = (() => {
 
   async function _connectWC() {
     const cfg = window.SAFU.chain();
-    const { EthereumProvider, createAppKit, mainnet } = await import('/js/wc-provider.bundle.js');
+    // ?v= is required here, not cosmetic — this file is fetched at the same
+    // URL every time (dynamic import, no filename change) and the deploy
+    // script does no CDN purge, so Cloudflare (max-age=14400) would keep
+    // serving the pre-2026-09-13 bundle for up to 4 hours after a deploy
+    // with every other check green. Same failure class that cost a W4 miss
+    // on js/whitepaper.js 2026-08-20 — bump on every future change to this
+    // file's content.
+    const { EthereumProvider, createAppKit, mainnet } = await import('/js/wc-provider.bundle.js?v=1');
     const modal = _wcModal(createAppKit, mainnet);
 
     if (!_wcProvider) {
