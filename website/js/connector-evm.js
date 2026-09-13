@@ -9,7 +9,9 @@
 //
 // Behaviour on the live ETH path is deliberately unchanged from before the
 // extraction — same permission dance, same 4001 handling, same network-switch
-// text, same QR modal.
+// text. The WalletConnect QR modal itself was swapped 2026-09-13 (see
+// _wcModal below and docs/vendored-js.md) — same @reown/appkit UI
+// connector-stellar.js already uses, not the old hand-rolled QR box.
 window.SAFU = window.SAFU || {};
 window.SAFU.connectors = window.SAFU.connectors || {};
 
@@ -28,63 +30,33 @@ window.SAFU.connectors.evm = (() => {
   window.dispatchEvent(new Event('eip6963:requestProvider'));
 
   // ── QR modal (WalletConnect only) ──────────────────────────────────────
-  function _showWCModal(uri) {
-    _hideWCModal();
-    const overlay = document.createElement('div');
-    overlay.id = 'wc-qr-overlay';
-    overlay.style.cssText = [
-      'position:fixed', 'inset:0', 'background:rgba(0,0,0,0.92)',
-      'z-index:600', 'display:flex', 'align-items:center', 'justify-content:center',
-    ].join(';');
+  // 2026-09-13: swapped the hand-rolled QR box for @reown/appkit's own modal
+  // (same UI Stellar's WalletConnect flow already uses — see
+  // connector-stellar.js and docs/vendored-js.md). ONE instance per page,
+  // never rebuilt — matches the lesson learned there: a second createAppKit()
+  // call is wasted work at best and a stale-instance bug at worst.
+  let _appKitModal = null;
 
-    const box = document.createElement('div');
-    box.style.cssText = [
-      'background:#0d0d0d', 'border:1px solid #333', 'padding:1.75rem',
-      'text-align:center', 'width:280px', "font-family:'JetBrains Mono',monospace",
-    ].join(';');
-
-    const label = document.createElement('div');
-    label.style.cssText = 'font-size:0.72rem;color:#888;letter-spacing:0.1em;margin-bottom:1.25rem;';
-    label.textContent = '> scan with your mobile wallet';
-
-    const img = document.createElement('img');
-    img.id = 'wc-qr-img';
-    img.style.cssText = 'display:block;margin:0 auto 1.25rem;border:4px solid #fff;width:220px;height:220px;background:#fff;';
-
-    const uriBox = document.createElement('div');
-    uriBox.style.cssText = 'font-size:0.6rem;color:#444;word-break:break-all;margin-bottom:1.25rem;';
-    uriBox.textContent = uri.slice(0, 52) + '…';
-
-    const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = '[ cancel ]';
-    cancelBtn.style.cssText = [
-      'background:transparent', 'border:1px solid #444', 'color:#888',
-      "font-family:'JetBrains Mono',monospace", 'padding:0.4rem 1.2rem',
-      'cursor:pointer', 'font-size:0.72rem', 'letter-spacing:0.06em',
-    ].join(';');
-    cancelBtn.onclick = _hideWCModal;
-
-    box.appendChild(label);
-    box.appendChild(img);
-    box.appendChild(uriBox);
-    box.appendChild(cancelBtn);
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
-
-    try {
-      const qr = qrcode(0, 'L');
-      qr.addData(uri);
-      qr.make();
-      img.src = qr.createDataURL(4, 0);
-    } catch (e) {
-      img.style.display = 'none';
-      uriBox.style.color = '#aaa';
-    }
+  function _wcCloseModal() {
+    try { if (_appKitModal) _appKitModal.close(); } catch (_) {}
   }
 
-  function _hideWCModal() {
-    const el = document.getElementById('wc-qr-overlay');
-    if (el) el.remove();
+  function _wcModal(createAppKit, mainnet) {
+    if (!_appKitModal) {
+      _appKitModal = createAppKit({
+        projectId: CONFIG.WALLETCONNECT_PROJECT_ID,
+        manualWCControl: true,
+        enableReconnect: true,
+        networks: [mainnet],
+        metadata: {
+          name:        'SAFU',
+          description: 'Stake into a SAFU pool and get covered.',
+          url:         'https://safustaking.com',
+          icons:       ['https://safustaking.com/favicon.svg'],
+        },
+      });
+    }
+    return _appKitModal;
   }
 
   // ── shared finalisation ────────────────────────────────────────────────
@@ -133,34 +105,80 @@ window.SAFU.connectors.evm = (() => {
     return _finalize(p);
   }
 
+  // ONE EthereumProvider per page, cached like connector-stellar.js's
+  // _wcModule — NOT reconstructed on every click. Calling EthereumProvider.
+  // init() twice registers a second Core under the same
+  // `_walletConnectCore_safu-evm` global key ("Init() was called 2 times"),
+  // the identical bug class Stellar hit before caching its module 2026-09-11.
+  // Every configured EVM chain is the same one (Ethereum mainnet — SAFUPoolV8
+  // has no other deployment), so unlike Stellar's cache there is no
+  // network-mismatch case to guard against on reuse.
+  let _wcProvider = null;
+
+  // Bounds the whole connect attempt, not just the pairing wait. Without
+  // this a WalletConnect URI nobody scans (or a pairing the user never
+  // approves) leaves wallet.js's picker showing "Connecting…" indefinitely —
+  // the same failure Stellar's WC path had until its own 120s timeout landed
+  // 2026-09-11 (founder report: "some dots appear and doesn't go away").
+  const CONNECT_TIMEOUT_MS = 120000;
+
+  function _withTimeout(promise, label, onTimeout) {
+    let timer;
+    const limit = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        if (onTimeout) onTimeout();
+        const err = new Error(`${label} connect timed out`);
+        err.userMessage = `${label} did not finish connecting within 2 minutes. Try again.`;
+        reject(err);
+      }, CONNECT_TIMEOUT_MS);
+    });
+    return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+  }
+
   async function _connectWC() {
     const cfg = window.SAFU.chain();
-    const { EthereumProvider } = await import('/js/wc-provider.bundle.js');
-    const wcProvider = await EthereumProvider.init({
-      projectId:   CONFIG.WALLETCONNECT_PROJECT_ID,
-      chains:      [cfg.chainId],
-      showQrModal: false,
-      rpcMap:      { [cfg.chainId]: cfg.rpcUrl },
-      metadata: {
-        name:        'SAFU',
-        description: 'Stake into a SAFU pool and get covered.',
-        url:         'https://safustaking.com',
-        icons:       ['https://safustaking.com/favicon.svg'],
-      },
-    });
+    const { EthereumProvider, createAppKit, mainnet } = await import('/js/wc-provider.bundle.js');
+    const modal = _wcModal(createAppKit, mainnet);
 
-    const onUri = uri => _showWCModal(uri);
-    wcProvider.on('display_uri', onUri);
-
-    try {
-      await wcProvider.connect();
-    } finally {
-      wcProvider.off('display_uri', onUri);
-      _hideWCModal();
+    if (!_wcProvider) {
+      _wcProvider = await EthereumProvider.init({
+        projectId:   CONFIG.WALLETCONNECT_PROJECT_ID,
+        chains:      [cfg.chainId],
+        showQrModal: false,
+        rpcMap:      { [cfg.chainId]: cfg.rpcUrl },
+        metadata: {
+          name:        'SAFU',
+          description: 'Stake into a SAFU pool and get covered.',
+          url:         'https://safustaking.com',
+          icons:       ['https://safustaking.com/favicon.svg'],
+        },
+        // Own Core, own storage — same fix connector-stellar.js already
+        // shipped (2026-09-11) for the identical collision: both bundles
+        // otherwise park their Core on the same global
+        // (`_walletConnectCore_<prefix>`), so whichever chain's WC a
+        // visitor tries first silently becomes the Core the other chain
+        // reuses. Verified against the type chain (not assumed):
+        // EthereumProviderOptions -> UniversalProviderOpts ->
+        // SignClientTypes.Options -> CoreTypes.Options, which is where
+        // customStoragePrefix is actually declared — NOT under a
+        // signClientOptions sub-object, which is the Stellar kit's own
+        // different class and does not apply here.
+        customStoragePrefix: 'safu-evm',
+      });
     }
 
-    S.wcProvider = wcProvider;
-    return _finalize(new ethers.BrowserProvider(wcProvider));
+    const onUri = uri => modal.open({ uri });
+    _wcProvider.on('display_uri', onUri);
+
+    try {
+      await _wcProvider.connect();
+    } finally {
+      _wcProvider.off('display_uri', onUri);
+      modal.close();
+    }
+
+    S.wcProvider = _wcProvider;
+    return _finalize(new ethers.BrowserProvider(_wcProvider));
   }
 
   return {
@@ -190,7 +208,7 @@ window.SAFU.connectors.evm = (() => {
       out.push({
         name:    'WalletConnect',
         tag:     'Rainbow · Trust · Safe · 300+',
-        connect: _connectWC,
+        connect: () => _withTimeout(_connectWC(), 'WalletConnect', _wcCloseModal),
         // Signals to wallet.js that a failure here should reopen the picker,
         // because the user was mid-flow in a separate overlay.
         reopenOnError: true,

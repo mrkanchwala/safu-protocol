@@ -546,17 +546,17 @@
 </footer>
 
 <!-- ── SCRIPTS — load order matters ────────────────────────────────── -->
-<!-- Subresource Integrity added 2026-08-19. Both files are version-pinned but
-     were previously loaded with no integrity attribute, so a compromise at
-     either CDN would execute arbitrary JS on a page where users sign mainnet
-     transactions with an injected provider in scope. Hashes computed from the
-     pinned artifacts (ethers 6.7.0, 479045 bytes; qrcode-generator 1.4.4,
-     20768 bytes). Regenerate if either version is ever bumped. -->
+<!-- Subresource Integrity added 2026-08-19. Version-pinned, loaded with an
+     integrity attribute so a compromise at the CDN cannot execute arbitrary JS
+     on a page where users sign mainnet transactions with an injected provider
+     in scope. Hash computed from the pinned artifact (ethers 6.7.0, 479045
+     bytes). Regenerate if the version is ever bumped.
+     qrcode-generator REMOVED 2026-09-13 — connector-evm.js's WalletConnect QR
+     now renders via @reown/appkit's own modal (wc-provider.bundle.js), the
+     same UI connector-stellar.js already uses. The hand-rolled QR box that
+     needed this library is gone; nothing else in website/ imports it. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"
         integrity="sha384-u0NcfwGT0MUYq60cVWPN34m99JhiJTCRG+0JOgmAQ++pTQ4w6AKkwhA9Wj/VjNRi"
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"
-        integrity="sha384-lQXOAyZwHXE55JFyrOMB7nY2Wv+m5ZWNtJcHrd1rceRQXAYNLak8ukN5TjBTcIwz"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- Load order matters: config (data) → abi → state → adapters → chain
      (resolver, needs adapters registered) → everything that consumes them. -->
@@ -572,7 +572,7 @@
 <script src="js/init.js?v=38"></script>
 <!-- Connectors before wallet.js: wallet.js resolves them by family at
      modal-open time, and connector-evm starts EIP-6963 discovery on load. -->
-<script src="js/connector-evm.js?v=38"></script>
+<script src="js/connector-evm.js?v=39"></script>
 <script src="js/connector-stellar.js?v=41"></script>
 <script src="js/wallet.js?v=40"></script>
 <script src="js/stake.js?v=38"></script>

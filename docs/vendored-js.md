@@ -8,7 +8,7 @@
 |---|---|---|---|---|---|---|
 | `stellar-sdk.min.js` | `@stellar/stellar-sdk` | 16.2.0 | `StellarSdk` | 472 KB | Apache-2.0 | `c872bee0e34302f812bcb404580f288cf3d434efeee3d40755d4024d74982fd0` |
 | `freighter-api.min.js` | `@stellar/freighter-api` | 6.0.1 | `freighterApi` | 10 KB | Apache-2.0 | `d797429cf97f9a67f1999910830a89dc01d565aedebafb651a11b1ed003a7e9d` |
-| `wc-provider.bundle.js` | `@walletconnect/ethereum-provider` | 2.19.2 | ES module export (`EthereumProvider`) | 599 KB (613,619 bytes) | Apache-2.0 | `b7b4aa997065450f33c2b647339c4b0a81921346e4db3655d7c39def362027d6` |
+| `wc-provider.bundle.js` | `@walletconnect/ethereum-provider` + `@reown/appkit` (modal only) | 2.19.2 + 1.8.21 | ES module exports (`EthereumProvider`, `createAppKit`, `mainnet`) | 2.15 MB (2,250,190 bytes) | Apache-2.0 / MIT | `4b9409ab63322f570d07cb684317124104c26864d6be159653bfb1817404f64c` |
 | `stellar-wallets-kit.bundle.js` | `@creit.tech/stellar-wallets-kit` | 2.5.0 (7 modules only) + `buffer` polyfill injected (rebuilt 2026-09-11) | `SAFUStellarWalletModules` (IIFE) | 441 KB (451,782 bytes) | MIT | `335664afe8017d2d4b15daeb11e5413098fad05c2974c7aa19b4895a4c23f75b` |
 | `stellar-wc.bundle.js` | `@creit.tech/stellar-wallets-kit` | 2.5.0 (WalletConnect module only) | ES module exports (`WalletConnectModule`, `WalletConnectTargetChain`, `WalletConnectAllowedMethods`) | 2.1 MB (2,151,584 bytes) | MIT | `98971e1b07f87b14b3291926fd3628c790250031a2d098cbde23c374a8cd08a8` |
 
@@ -73,7 +73,100 @@ shasum -a 256 wc-provider.bundle.js   # record in the table above
 
 Verify functionally before shipping — `node -e "import('./wc-provider.bundle.js').then(m => console.log(typeof m.EthereumProvider.init))"` should print `function`. Check `npm audit` AND grep the actual bundled output for any flagged package name — the lockfile lists what's installed, not what's shipped to the browser (Node-only deps like `ws`/`axios` commonly resolve to inert browser stubs via the `browser` package.json field and never reach the real vulnerable code).
 
-**Still open:** this rebuild has not had its manual human WalletConnect click-through test yet (founder-mandated sign-off gate — headless Chromium cannot drive a wallet extension). Old file preserved at `website/js/wc-provider.bundle.js.bak-pre-2.19.2-rebuild` for rollback.
+**Still open (as of the 2.19.2 rebuild):** this rebuild has not had its manual human WalletConnect click-through test yet (founder-mandated sign-off gate — headless Chromium cannot drive a wallet extension). Old file preserved at `website/js/wc-provider.bundle.js.bak-pre-2.19.2-rebuild` for rollback.
+
+## `wc-provider.bundle.js` — rebuilt 2026-09-13 to add `@reown/appkit`, superseding the AppKit-avoidance above
+
+**Why the tradeoff reversed.** Founder-flagged 2026-09-11: the EVM WalletConnect modal looked
+noticeably worse than Stellar's ("shitty graphics... old system" vs Stellar's AppKit-based flow).
+Root cause: `showQrModal:false` was already set, so the vendored library's own modal was never
+the problem — SAFU's own hand-rolled QR box (`connector-evm.js`'s old `_showWCModal`, plain black
+overlay + `qrcode-generator`, no wallet list, no mobile deep-links) was what rendered. The
+2.19.2 pin above was never about that box; it was about avoiding `ethereum-provider` 2.20+'s
+*hard* dependency on AppKit even when unused.
+
+**Measured before deciding, not estimated (`/tmp` throwaway builds, three variants):**
+
+| Approach | Size | Verdict |
+|---|---|---|
+| Bump `ethereum-provider` past 2.20 (forces AppKit as a hard dep) | ~2.0–2.8 MB per public advisories, not directly measured | Rejected — reopens exactly what 2.19.2 was pinned to avoid, no control over what ships |
+| Raw `@walletconnect/sign-client` + `@reown/appkit/core`, EVM only, skip `ethereum-provider` entirely | 1.97 MB | Rejected — means hand-writing the EIP-1193 wrapper `ethers.BrowserProvider` needs (chain-id handling, `wallet_switchEthereumChain`, event forwarding) that `ethereum-provider` already implements correctly; real protocol code, real risk of a subtle bug |
+| **Shipped: keep `ethereum-provider@2.19.2` (unchanged, still does all EIP-1193 wrapping), add `@reown/appkit@1.8.21` (`/core` subpath) for the modal UI only** | **2.15 MB** | **Chosen** — zero change to the proven EIP-1193 layer (`adapter-evm.js`, `_finalize()`, `_requestAccounts()` untouched), only the QR-display glue in `connector-evm.js` changed |
+| One shared bundle serving both EVM and Stellar (evaluated, not built into prod) | 2.33 MB | Rejected — costs Stellar-only visitors bytes they'd never otherwise pay (this repo's own loading strategy assumes one chain per visit), only pays off for the minority of visitors who WalletConnect on both chains in one session |
+
+`@reown/appkit@1.8.21` is the exact version Stellar's `stellar-wc.bundle.js` already resolves to and
+runs in production — not a fresh, unproven pin.
+
+**Wiring (`connector-evm.js`):** `EthereumProvider.init()` is unchanged except for one new field —
+`customStoragePrefix: 'safu-evm'`. Verified against the actual `.d.ts` type chain
+(`EthereumProviderOptions` → `UniversalProviderOpts` → `SignClientTypes.Options` → `CoreTypes.Options`,
+where `customStoragePrefix` is declared), not assumed from the Stellar kit's *different* class
+(`WalletConnectModule`, which takes a nested `signClientOptions.customStoragePrefix` — that field
+does not exist on `EthereumProviderOptions` and would have silently done nothing here). This closes
+the same Core-collision class connector-stellar.js hit 2026-09-11
+(`_walletConnectCore_<prefix>` on `globalThis` — both bundles otherwise share the default empty-string
+key). `display_uri` now opens a module-level `createAppKit()` modal (`_wcModal()`, one instance per
+page, never rebuilt — same lesson learned on the Stellar side) instead of the removed hand-rolled QR
+box. `qrcode-generator` is no longer used anywhere in `website/` and its CDN `<script>` tag was
+removed from `index.html`.
+
+**Build command:**
+```bash
+mkdir /tmp/wc-evm-rebuild && cd /tmp/wc-evm-rebuild
+npm init -y && npm install @walletconnect/ethereum-provider@2.19.2 @reown/appkit@1.8.21 --no-save --ignore-scripts
+cat > entry.js <<'EOF'
+export { EthereumProvider } from '@walletconnect/ethereum-provider';
+export { createAppKit } from '@reown/appkit/core';
+export { mainnet } from '@reown/appkit/networks';
+EOF
+npx esbuild entry.js --bundle --format=esm --platform=browser --minify \
+  --define:global=globalThis --define:process.env.NODE_ENV='"production"' \
+  --outfile=wc-provider.bundle.js
+shasum -a 256 wc-provider.bundle.js   # record in the table above
+```
+
+**CVE check, same policy as every bundle here — grep the shipped output, not just the lockfile.**
+`npm audit` on this exact tree: 9 findings, all trace to two roots — `ws` (HIGH, uninitialized-memory
++ memory-exhaustion DoS in its Node server/client implementation) and `decode-uri-component` (MODERATE,
+regex DoS via `query-string`, pulled in by `@walletconnect/utils`). **`ws`'s vulnerable code is
+confirmed NOT shipped**: `ws`'s own `package.json` declares a `"browser": "browser.js"` remap, esbuild
+honoured it, and the bundle contains zero of `permessage-deflate`/`PerMessageDeflate`/Node `net`/`tls`
+markers — the advisory is in code that never reaches the browser build, the same pattern already
+documented for `axios`/`ws` false positives elsewhere in this file. The `decode-uri-component` chain
+was not independently disproven the same way (minification erases the function name), but it is the
+same dependency chain `stellar-wc.bundle.js` already ships in production today (same
+`@walletconnect/sign-client` lineage) — not a new exposure this bundle introduces.
+
+**Verified via real Chromium (Playwright) against the live WalletConnect relay — not mocked, not
+Node** (same policy as every AppKit-based bundle here; bare Node throws `HTMLElement is not defined`,
+confirming this one also needs a real DOM): `EthereumProvider.init()` completed, a real `wc:...`
+pairing URI came back, the AppKit modal opened in the DOM and rendered real content (not blank), zero
+CSP violations against the local (meta-tag) policy, zero uncaught page/console errors. Full site smoke
+gate (`tests/website/smoke.playwright.mjs`) re-run after the change: byte-identical pass/fail set to
+the pre-change baseline (80 passed, the same 6 pre-existing stale-assertion failures unrelated to this
+work) — zero regressions. One-off verification script:
+`tests/website/wc-evm-verify.playwright.mjs`.
+
+**Explorer/push hosts referenced in the bundle but not in the CSP allowlist
+(`explorer-api.walletconnect.com`, `echo.walletconnect.com`) — checked, not added.** These are real
+fetch-target constants inside the bundle (not just comments), but `manualWCControl:true` — the same
+config flag `stellar-wc.bundle.js` already runs live with — appears to suppress AppKit's own
+wallet-explorer/push-notification flow in favour of pure URI-QR display. Zero CSP violations fired in
+the live-relay test above, and Stellar's identical config has been live without these hosts allowed
+with no reported break. Not added defensively: CSP entries for code paths with no evidence they fire
+are unnecessary surface, not a safety improvement.
+
+**Still open — same gate every WalletConnect bundle in this repo carries:** no real wallet has
+scan-approved a pairing through this rebuild yet. Headless Chromium cannot drive a real mobile wallet,
+so the actual connect → sign round trip needs a founder click-through before this is fully proven, same
+limitation `stellar-wc.bundle.js` above is still waiting on. **Also unverified: the LIVE NGINX CSP
+header**, as opposed to the meta tag — the two are already equal-or-superset on every relevant host
+today (compared line by line 2026-09-13, nginx allows everything the meta tag does), so the
+Playwright run's meta-tag-only result should carry over, but this has not been checked against a
+request actually served through nginx.
+
+Old file preserved at `website/js/wc-provider.bundle.js.bak-pre-appkit-rebuild-2026-09-13` for
+rollback.
 
 ## `stellar-wallets-kit.bundle.js` — built 2026-08-19, 7 of the kit's ~19 wallet modules only
 
