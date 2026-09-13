@@ -28,6 +28,40 @@ window.SAFU.wallet = (() => {
     return window.SAFU.connectors[window.SAFU.chain().family] || null;
   }
 
+  // ── shared WalletConnect modal (2026-09-13) ─────────────────────────────
+  // @reown/appkit's <w3m-modal> is a page-singleton DOM element — confirmed
+  // by direct isolated test, not assumed: construct one createAppKit()
+  // instance, close it, construct a second independent one, and the second
+  // renders empty (7-byte placeholder) forever, with ZERO chain-switch UI
+  // involved. Whichever instance constructs first keeps driving that one
+  // shared DOM node's Lit rendering; a second instance's .open() updates its
+  // own JS state but never reaches the screen. ONE shared instance for the
+  // whole page — lazily built on whichever chain's WalletConnect is tried
+  // first, reused by the other — is the only fix that doesn't fight the
+  // library's own architecture. createAppKit/mainnet are pulled from
+  // wc-provider.bundle.js (EVM's vendored bundle) purely because that's
+  // where they're already vendored; nothing here is EVM-specific.
+  let _sharedWCModal = null;
+  async function _getSharedWCModal() {
+    if (!_sharedWCModal) {
+      const { createAppKit, mainnet } = await import('/js/wc-provider.bundle.js?v=1');
+      _sharedWCModal = createAppKit({
+        projectId: CONFIG.WALLETCONNECT_PROJECT_ID,
+        manualWCControl: true,
+        enableReconnect: true,
+        networks: [mainnet],
+        metadata: {
+          name:        'SAFU',
+          description: 'Stake into a SAFU pool and get covered.',
+          url:         'https://safustaking.com',
+          icons:       ['https://safustaking.com/favicon.svg'],
+        },
+      });
+    }
+    return _sharedWCModal;
+  }
+  window.SAFU.getSharedWCModal = _getSharedWCModal;
+
   // ── option buttons ─────────────────────────────────────────────────────
   // Reuses .wallet-option / .wname / .wtag so the chain row and the wallet row
   // share one visual language and this needs no new CSS. The active marker is an
@@ -182,7 +216,24 @@ window.SAFU.wallet = (() => {
     if (stakeBtn) { stakeBtn.textContent = '[ stake ]'; stakeBtn.disabled = true; }
   }
 
+  // Closes a stray WalletConnect overlay left over from an unapproved attempt
+  // on ANY chain, not just the one becoming active. wallet.js's own
+  // #wallet-modal is a separate DOM element from a connector's AppKit
+  // w3m-modal — closing the picker never touched the other, so a still-open
+  // overlay from a previous chain's WC attempt silently intercepted every
+  // click on the page (including reopening the picker) until its own
+  // connect() call timed out. Found 2026-09-13 from a real cross-chain
+  // repro: open EVM WalletConnect, switch to Stellar, "connect wallet"
+  // does nothing — Playwright's own click hard-timed-out on the exact same
+  // stale w3m-modal intercepting pointer events.
+  function _closeAnyWCModal() {
+    Object.values(window.SAFU.connectors || {}).forEach(conn => {
+      try { conn.closeWCModal?.(); } catch (_) { /* best effort */ }
+    });
+  }
+
   function _switchChain(id) {
+    _closeAnyWCModal();
     // setChain() is an explicit transition: it disconnects and clears the stake
     // bounds and any in-progress amount, all of which belonged to the old chain.
     if (!window.SAFU.setChain(id)) return;
@@ -364,6 +415,7 @@ window.SAFU.wallet = (() => {
     // so _openModal ran twice per click. The guard belongs here, once.
     if (S.walletAddress) return;
 
+    _closeAnyWCModal();
     const modal = document.getElementById('wallet-modal');
     if (modal) { modal.classList.add('open'); _render(); }
   }

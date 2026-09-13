@@ -327,6 +327,15 @@ window.SAFU.connectors.stellar = (() => {
             : WalletConnectTargetChain.TESTNET,
         ],
       });
+      // 2026-09-13: override the kit's own throwaway createAppKit() call.
+      // <w3m-modal> is a page-singleton DOM element (proven by isolated
+      // test) — the kit's constructor builds its own createAppKit()
+      // internally with no way to inject one, so left alone it fights
+      // connector-evm.js's instance for the same DOM node and one of the two
+      // renders permanently empty depending on construction order. Replacing
+      // .modal here, before anything calls it, makes both chains share the
+      // one instance wallet.js owns.
+      _wcModule.modal = await window.SAFU.getSharedWCModal();
       _wcPassphrase = cfg.networkPassphrase;
     }
     await _wcWhenReady();
@@ -416,5 +425,14 @@ window.SAFU.connectors.stellar = (() => {
       window.SAFU.state._stellarModule = null;
       window.SAFU.state._stellarWalletLabel = null;
     },
+
+    // Called by wallet.js whenever the picker is re-entered (chain switch,
+    // reopen) — same fix as connector-evm.js's closeWCModal, same root cause:
+    // a stray AppKit overlay from an unapproved WalletConnect attempt is a
+    // separate DOM element from wallet.js's own #wallet-modal, and nothing
+    // previously closed it on a chain switch. Found 2026-09-13 from a real
+    // cross-chain repro (EVM WC left open blocks every click, including
+    // reopening the picker for Stellar, until the connect attempt times out).
+    closeWCModal: _wcCloseModal,
   };
 })();

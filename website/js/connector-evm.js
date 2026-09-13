@@ -32,31 +32,22 @@ window.SAFU.connectors.evm = (() => {
   // ── QR modal (WalletConnect only) ──────────────────────────────────────
   // 2026-09-13: swapped the hand-rolled QR box for @reown/appkit's own modal
   // (same UI Stellar's WalletConnect flow already uses — see
-  // connector-stellar.js and docs/vendored-js.md). ONE instance per page,
-  // never rebuilt — matches the lesson learned there: a second createAppKit()
-  // call is wasted work at best and a stale-instance bug at worst.
-  let _appKitModal = null;
+  // connector-stellar.js and docs/vendored-js.md).
+  //
+  // 2026-09-13, same day, corrected: does NOT construct its own createAppKit()
+  // instance any more. <w3m-modal> is a page-singleton DOM element (proven by
+  // isolated test — see wallet.js's _getSharedWCModal), so a second
+  // independent instance here would fight Stellar's for the same node and
+  // render empty. Uses the one shared instance wallet.js owns instead.
+  let _appKitModalCache = null;
 
   function _wcCloseModal() {
-    try { if (_appKitModal) _appKitModal.close(); } catch (_) {}
+    try { if (_appKitModalCache) _appKitModalCache.close(); } catch (_) {}
   }
 
-  function _wcModal(createAppKit, mainnet) {
-    if (!_appKitModal) {
-      _appKitModal = createAppKit({
-        projectId: CONFIG.WALLETCONNECT_PROJECT_ID,
-        manualWCControl: true,
-        enableReconnect: true,
-        networks: [mainnet],
-        metadata: {
-          name:        'SAFU',
-          description: 'Stake into a SAFU pool and get covered.',
-          url:         'https://safustaking.com',
-          icons:       ['https://safustaking.com/favicon.svg'],
-        },
-      });
-    }
-    return _appKitModal;
+  async function _wcModal() {
+    _appKitModalCache = await window.SAFU.getSharedWCModal();
+    return _appKitModalCache;
   }
 
   // ── shared finalisation ────────────────────────────────────────────────
@@ -144,8 +135,8 @@ window.SAFU.connectors.evm = (() => {
     // with every other check green. Same failure class that cost a W4 miss
     // on js/whitepaper.js 2026-08-20 — bump on every future change to this
     // file's content.
-    const { EthereumProvider, createAppKit, mainnet } = await import('/js/wc-provider.bundle.js?v=1');
-    const modal = _wcModal(createAppKit, mainnet);
+    const { EthereumProvider } = await import('/js/wc-provider.bundle.js?v=1');
+    const modal = await _wcModal();
 
     if (!_wcProvider) {
       _wcProvider = await EthereumProvider.init({
@@ -231,5 +222,14 @@ window.SAFU.connectors.evm = (() => {
       if (S.wcProvider?.disconnect) S.wcProvider.disconnect().catch(() => {});
       S.wcProvider = null;
     },
+
+    // Called by wallet.js whenever the picker is re-entered (chain switch,
+    // reopen) — closes a stray AppKit overlay left over from an unapproved
+    // WalletConnect attempt. Without this, switching chains mid-pairing
+    // leaves a full-screen w3m-modal in the DOM (class="open") that neither
+    // _switchChain nor _openModal touches, silently blocking every click
+    // underneath it until the connect promise itself times out. Found
+    // 2026-09-13 from a real cross-chain repro, not assumed.
+    closeWCModal: _wcCloseModal,
   };
 })();
