@@ -464,7 +464,7 @@
         <ul>
           <li>You name a beneficiary when you stake, and it has to be a different address from the one you stake with. The contract rejects a stake that names itself.</li>
           <li>The beneficiary is where your money goes. Both a claim payout and an ordinary withdrawal are sent there, so choose an address you control and can still reach later.</li>
-          <li>You sign every action from your staking wallet, and the funds arrive at the beneficiary.</li>
+          <li>You sign every action from your staking wallet, and the funds arrive at the beneficiary. <strong>This is deliberate, not incidental:</strong> the contract never sends money to whichever key just signed a transaction. If your staking wallet is ever compromised, the attacker can trigger a withdrawal or a claim override, but the payout still lands only at your registered beneficiary — they gain nothing unless they also hold that separate key. It is the same protection SAFU exists to give you, applied to the contract's own custody of your funds.</li>
           <li>You can change the beneficiary later from the same wallet you staked with.</li>
           <li>Staking from a hot wallet while naming a cold wallet as beneficiary is supported, and it is the safer setup.</li>
         </ul>

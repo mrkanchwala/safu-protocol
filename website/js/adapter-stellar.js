@@ -27,6 +27,10 @@ window.SAFU.adapters.stellar = function (cfg) {
   const DECIMALS = BigInt(cfg.decimals);           // 7 — from config, never assumed
   const SCALE    = 10n ** DECIMALS;
   const HEX64    = /^[0-9a-fA-F]{64}$/;            // no 0x — deliberately
+  // Same estimate basis as the T3 demo video's ledger→date conversion. Real
+  // ledger close time varies, so every caller of estimateRemaining() must
+  // label its output "~", never as an exact time.
+  const AVG_LEDGER_SECONDS = 5;
 
   // ── SDK loading ────────────────────────────────────────────────────────
   let sdkPromise    = null;
@@ -305,6 +309,51 @@ window.SAFU.adapters.stellar = function (cfg) {
         // estimate as a fact, so it is labelled for what it is.
         penaltyLockLabel: lockLedger > 0 ? `ledger ${lockLedger}` : null,
       };
+    },
+
+    // Option<Claim>: None decodes to null/undefined. Status is the raw
+    // ClaimStatus discriminant (types.rs:220-232) — Unused=0, Active=1,
+    // Completed=2, Cancelled=3, Reserved=4, PendingTime=5, AwaitingApproval=6,
+    // Expired=7 — verified against source, not assumed. Callers branch on the
+    // number directly rather than this file guessing a label for every state;
+    // only the cooldown-remaining case (Active) needs translating.
+    async readClaim(claimId) {
+      // ensureSdk() first, matching readStakeRecord's own pattern — sdk()
+      // (sync) assumes the SDK is already loaded, which is not guaranteed if
+      // this is the first Stellar-SDK-touching call on the page.
+      const S = await ensureSdk();
+      const raw = await this._simulate('get_claim', [S.xdr.ScVal.scvBytes(_fromHex(claimId))]);
+      if (raw === null || raw === undefined) return null;
+      return {
+        status:              Number(raw.status),
+        cooldownEndsLedger:  Number(raw.cooldown_ends_ledger ?? 0),
+        vestingEndsLedger:   Number(raw.vesting_ends_ledger ?? 0),
+        entitlementRaw:      BigInt(raw.entitlement ?? 0),
+        streamedRaw:         BigInt(raw.streamed ?? 0),
+        wallet:              raw.wallet ?? null,
+      };
+    },
+
+    // Same 5s/ledger estimate the T3 demo video used for "~September 19" —
+    // labelled with a "~" everywhere it reaches the UI for the same reason
+    // penaltyLockLabel above refuses to: Stellar's actual ledger interval
+    // varies, so this is an estimate, never presented as an exact time.
+    async readCurrentLedger() {
+      const server = this.server();
+      const res = await server.getLatestLedger();
+      return Number(res.sequence);
+    },
+
+    // Ledger-delta to a rounded, human day/hour estimate. Floors at "less
+    // than an hour" rather than a negative or zero-looking string — a claim
+    // whose cooldown ends mid-call should read as "almost there", not "-3m".
+    estimateRemaining(ledgersRemaining) {
+      const seconds = Math.max(0, ledgersRemaining) * AVG_LEDGER_SECONDS;
+      const days = Math.floor(seconds / 86400);
+      const hours = Math.floor((seconds % 86400) / 3600);
+      if (days > 0) return `~${days} day${days === 1 ? '' : 's'}${hours > 0 ? ` ${hours}h` : ''}`;
+      if (hours > 0) return `~${hours} hour${hours === 1 ? '' : 's'}`;
+      return 'less than an hour';
     },
 
     // Mirrors the Soroban contract's own stake() guards (stake.rs:143-165).

@@ -51,6 +51,35 @@ window.SAFU.stream = (() => {
         return;
       }
 
+      // Cooldown/status precheck — added 2026-09-13. Before this, a claim
+      // whose cooldown hadn't elapsed hit CooldownNotPassed (contract error
+      // #62) as a signed, submitted transaction: real gas spent on a result
+      // that was knowable in advance from a single free read. Same reasoning
+      // as the beneficiary check above — don't send a transaction whose
+      // outcome a read already tells you.
+      showStatus('status-stream', 'info', loader('Checking claim status'));
+      const claim = await a.readClaim(claimId);
+      if (!claim) {
+        showStatus('status-stream', 'err', 'Claim not found — check the ID.');
+        return;
+      }
+      if (claim.status !== 1) {
+        const label = claim.status === 4 ? 'still queued, not yet admitted'
+          : (claim.status === 5 || claim.status === 6) ? 'not yet active — waiting on the time gate or your approval'
+          : `not in an active payout state (status ${claim.status})`;
+        showStatus('status-stream', 'err', `> this claim is ${label}\n> nothing to pull yet`);
+        return;
+      }
+      const currentLedger = await a.readCurrentLedger();
+      const remaining = claim.cooldownEndsLedger - currentLedger;
+      if (remaining > 0) {
+        showStatus('status-stream', 'err',
+          `> payout not available yet\n` +
+          `> cooldown ends in ${a.estimateRemaining(remaining)}\n` +
+          `> nothing was sent — no gas spent, come back later`);
+        return;
+      }
+
       showStatus('status-stream', 'info', loader('Sending pull transaction'));
       const sent = await a.sendClaimStream({ claimId, beneficiary });
       showStatus('status-stream', 'info',
