@@ -302,7 +302,7 @@ window.SAFU.connectors.stellar = (() => {
     }
     if (!_wcModule) {
       const { WalletConnectModule, WalletConnectTargetChain } =
-        await import('/js/stellar-wc.bundle.js');
+        await import('/t3/js/stellar-wc.bundle.js');
       _wcModule = new WalletConnectModule({
         projectId: CONFIG.WALLETCONNECT_PROJECT_ID,
         metadata: {

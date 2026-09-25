@@ -135,7 +135,7 @@ window.SAFU.connectors.evm = (() => {
     // with every other check green. Same failure class that cost a W4 miss
     // on js/whitepaper.js 2026-08-20 — bump on every future change to this
     // file's content.
-    const { EthereumProvider } = await import('/js/wc-provider.bundle.js?v=1');
+    const { EthereumProvider } = await import('/t3/js/wc-provider.bundle.js?v=1');
     const modal = await _wcModal();
 
     if (!_wcProvider) {

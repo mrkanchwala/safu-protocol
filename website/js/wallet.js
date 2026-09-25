@@ -44,7 +44,7 @@ window.SAFU.wallet = (() => {
   let _sharedWCModal = null;
   async function _getSharedWCModal() {
     if (!_sharedWCModal) {
-      const { createAppKit, mainnet } = await import('/js/wc-provider.bundle.js?v=1');
+      const { createAppKit, mainnet } = await import('/t3/js/wc-provider.bundle.js?v=1');
       _sharedWCModal = createAppKit({
         projectId: CONFIG.WALLETCONNECT_PROJECT_ID,
         manualWCControl: true,
