@@ -7,7 +7,7 @@
 
 -r requirements.txt
 
-pytest==9.0.2
+pytest==9.0.3
 
 # Linting. Ruff caught two real defects during the 7a audit that the test
 # suite did not: an F821 undefined name inside an audit fix, and the same
