@@ -34,7 +34,7 @@ certifi==2026.1.4
 redis==7.4.0
 
 # --- Config ---
-python-dotenv==1.2.1
+python-dotenv==1.2.2
 
 # --- Ethereum / EVM ---
 eth-abi==6.0.0b1
